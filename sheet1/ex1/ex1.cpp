@@ -32,19 +32,6 @@ int decode_col(int var, int numColors, int numVertices){
 	return ((abs(var)-decode_vertex(var, numVertices))%numColors) +1 ; 
 }
 
-/*
- * parses jst a single number
- */
-int parseNumber(FILE* f, int c){
-	int res = c - '0';
-	c = fgetc(f);
-	while(isdigit(c)){
-		res = res*10 + (c-'0');
-		c = fgetc(f);
-	}
-	return res;
-}
-
 void addClauses(void* solver, int numVertices, int numColors){
 	int var = 0;
 	for (int v=0; v<numVertices;v++){
@@ -92,19 +79,11 @@ bool betterFile(void* solver, const char* filename, int numColors, int* outVaria
 			numEdges = std::stoi(splitted[3]);
 		}
 		if (splitted[0].compare(std::string("e")) == 0){
-			//std::cout<<"--Filling vector---"<<std::endl;	
 			int v1 = std::stoi(splitted[1]);
-			//std::cout<<v1 << " ";
 			int v2 = std::stoi(splitted[2]);
-			//std::cout<<v2;
 			edge.push_back(v1);
 			edge.push_back(v2);
 			std::cout<<std::endl;
-			/*for (auto const& value : edge){
-    				std::cout << value << std::endl;
-			}
-			std::cout<<"------"<<std::endl;
-			*/
 		}
 		if (!edge.empty()){
 			addConflictingClauses(solver, numColors, numVertices, edge[0], edge[1]);
@@ -129,8 +108,7 @@ int main(int argc, char **argv) {
 
 	void *solver = ipasir_init();
 	int variables = 0;
-	int colors = 3;
-	//bool loaded = loadFormula(solver, argv[1], colors, &variables);
+	int colors = 7;
 	bool loaded = betterFile(solver, argv[1], colors, &variables);
 	if (!loaded) {
 		std::cout << "c The input formula " << argv[1] << " could not be loaded." << std::endl;
@@ -140,12 +118,11 @@ int main(int argc, char **argv) {
 		std::cout << "c Loaded, solving" << std::endl;
 	}
 
-	// ipasir_assume(solver, 1);
+	//ipasir_assume(solver, 1);
+	//ipasir_add(solver, 1);
+	//ipasir_add(solver, 0);
 
-	ipasir_add(solver, 1);
-	ipasir_add(solver, 0);
-
-	int satRes;// = ipasir_solve(solver);
+	int satRes = ipasir_solve(solver);
 
 	if (satRes == 20) {
 		std::cout << "c The input formula is unsatisfiable" << std::endl;
@@ -159,11 +136,15 @@ int main(int argc, char **argv) {
 		int numVertices = variables/colors;
 		//while (satRes == 10) {
 		//	std::vector<int> clause;
+			int vertex = 0;
+			int color = 0;
 			for (int var = 1; var <= variables; var++) {
 				int value = ipasir_val(solver, var);
-				//if (value > 0){
-					std::cout << value << ": " <<decode_vertex(value,numVertices) << " " << decode_col(value,colors,numVertices)<<std::endl;
-				//}
+				if (value > 0){
+					vertex = decode_vertex(value,numVertices);
+					color = decode_col(value,colors,numVertices);
+					std::cout <<"v Node " << vertex <<" gets color "<< color<<std::endl;
+				}
 				//clause.push_back(-value);
 			}
 			std::cout << std::endl;

@@ -1,0 +1,17 @@
+# Source
+# https://mat.gsia.cmu.edu/COLOR/instances.html
+#
+
+# Format
+# n filename
+# such that is the optimal coloring
+#
+
+11 anna.col
+8  miles250.col
+49 mulsol.i.1.col
+5  queen5_5.col
+5 le450_5d.col
+2 trival.col
+5 le450_5d.col
+11 huck.col
