@@ -32,11 +32,6 @@ bool loadFormula(void* solver, const char* filename, int* outVariables) {
 		
 		if (isspace(c)) continue; // skip whitespace
 		
-		if (c == '-') { // negative number coming
-			neg = true;
-			continue;
-		}
-
 		// number
 		if (isdigit(c)) {
 			int num = c - '0';
@@ -45,16 +40,15 @@ bool loadFormula(void* solver, const char* filename, int* outVariables) {
 				num = num*10 + (c-'0');
 				c = fgetc(f);
 			}
-			if (neg) {
-				num *= -1;
-			}
-			neg = false;
-
-			if (abs(num) > maxVar) {
-				maxVar = abs(num);
+			if (num > maxVar) {
+				maxVar = num;
 			}
 			// add to the solver
-			ipasir_add(solver, num);
+			std::cout << num << " ";
+			//ipasir_add(solver, num);
+		}
+		else{
+			std::cout << std::endl;
 		}
 	}
 
@@ -88,7 +82,7 @@ int main(int argc, char **argv) {
 	ipasir_add(solver, 1);
 	ipasir_add(solver, 0);
 
-	int satRes = ipasir_solve(solver);
+	int satRes;// = ipasir_solve(solver);
 
 	if (satRes == 20) {
 		std::cout << "c The input formula is unsatisfiable" << std::endl;
