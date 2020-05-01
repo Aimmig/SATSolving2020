@@ -9,10 +9,15 @@ extern "C" {
 #include <ctype.h>
 #include <vector>
 
+int encode(int color, int vertex, int numVertices){
+	return 1+vertex+color*numVertices;
+}
+
+
 /**
  * Reads a formula from a given file 
  */
-bool loadFormula(void* solver, const char* filename, int* outVariables) {
+bool loadFormula(void* solver, const char* filename, int numColors, int* outVariables) {
 	FILE* f = fopen(filename, "r");
 
 	if (f == NULL) {
@@ -21,15 +26,36 @@ bool loadFormula(void* solver, const char* filename, int* outVariables) {
 
 	int maxVar = 0;
 	int c = 0;
-	bool neg = false;	
 	while (c != EOF) {
 		c = fgetc(f);
 
-		if (c == 'c' || c == 'p') { // skip comments and header
+		if (c == 'c') { // skip comments and header
 			while(c != '\n') c = fgetc(f);
 			continue;
 		}
 		
+		if (c == 'p') {
+			while(!isdigit(c)){
+			    c = fgetc(f);
+			}
+			int numVertices = c - '0';
+			c = fgetc(f);
+			while(isdigit(c)){
+				numVertices = numVertices*10 + (c-'0');
+				c = fgetc(f);
+			}
+			std::cout << numVertices << std::endl;
+			int var = 0;
+			for (int v=0; v<numVertices;v++){
+				for (int col=0; col<numColors; col++){
+					var = encode(col,v,numVertices);
+					ipasir_add(solver,var);
+					std::cout << var << " ";
+				}
+				std::cout << std::endl;
+				ipasir_add(solver,0);
+			}
+		}
 		if (isspace(c)) continue; // skip whitespace
 		
 		// number
@@ -44,11 +70,11 @@ bool loadFormula(void* solver, const char* filename, int* outVariables) {
 				maxVar = num;
 			}
 			// add to the solver
-			std::cout << num << " ";
+			//std::cout << num << " ";
 			//ipasir_add(solver, num);
 		}
 		else{
-			std::cout << std::endl;
+			//std::cout << std::endl;
 		}
 	}
 
@@ -67,7 +93,8 @@ int main(int argc, char **argv) {
 
 	void *solver = ipasir_init();
 	int variables = 0;
-	bool loaded = loadFormula(solver, argv[1], &variables);
+	int colors = 8;
+	bool loaded = loadFormula(solver, argv[1], colors, &variables);
 
 	if (!loaded) {
 		std::cout << "c The input formula " << argv[1] << " could not be loaded." << std::endl;
