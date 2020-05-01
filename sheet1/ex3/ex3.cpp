@@ -77,7 +77,7 @@ void loadFormula(void* solver, int n, int k, int outVariables[]) {
 
 int main(int argc, char **argv) {
 	std::cout << "c Using the incremental SAT solver " << ipasir_signature() << std::endl;
-
+	std::cout << "c This programm checks if W(2,k) > n" << std::endl;
 	if (argc != 3) {
 		puts("c USAGE: ./example <n> <k>");
 		return 0;
@@ -85,7 +85,9 @@ int main(int argc, char **argv) {
 
 	void *solver = ipasir_init();
 	int params[2] = {0,0};
-	loadFormula(solver, atoi(argv[1]), atoi(argv[2]), params);
+	int n = atoi(argv[1]);
+	int k = atoi(argv[2]);
+	loadFormula(solver, n, k, params);
 
 	//ipasir_assume(solver,1);
 	int satRes = ipasir_solve(solver);
@@ -95,6 +97,7 @@ int main(int argc, char **argv) {
 	
 	if (satRes == 20) {
 		std::cout << "c The input formula is unsatisfiable" << std::endl;
+		std::cout << "c This means W(2," << k << ") > " << n << " is false" << std::endl;
 	}
 	
 	else if (satRes == 10) {
@@ -104,6 +107,8 @@ int main(int argc, char **argv) {
 			int value = ipasir_val(solver, var);
 			std::cout << value << " ";
 		}
+		std::cout << std::endl;
+		std::cout << "c This means W(2," << k << ") > " << n << " is true" << std::endl;
 	}
 	return 0;
 }
