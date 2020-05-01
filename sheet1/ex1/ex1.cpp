@@ -64,8 +64,8 @@ void addConflictingClauses(void* solver, int numColors, int numVertices, int v1,
 bool betterFile(void* solver, const char* filename, int numColors, int* outVariables){
 	std::ifstream infile(filename);
 	std::string line;
-	int numVertices;
-	int numEdges;
+	int numVertices = 0;
+	int numEdges = 0;
   	std::vector<int> edge;	
 	while(std::getline(infile,line)){
 		std::vector<std::string> splitted;
@@ -132,7 +132,7 @@ int main(int argc, char **argv) {
 		std::cout << "c The input formula is satisfiable" << std::endl;
 		//std::cout << "v ";
 
-		int count = 1;
+		//int count = 1;
 		int numVertices = variables/colors;
 		//while (satRes == 10) {
 		//	std::vector<int> clause;
