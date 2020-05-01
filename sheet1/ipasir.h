@@ -1,1 +1,0 @@
-../ipasirapp/ipasir.h

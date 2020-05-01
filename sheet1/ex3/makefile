@@ -6,24 +6,25 @@
 CC	    =	g++ -std=c++11
 CFLAGS	=	-Wall -DNDEBUG -O3
 
-DEPS	=	../candy-kingdom/build/libcandylib.a
-LIBS	=	-L../candy-kingdom/build/ -lcandylib -lz
+DEPS	=	../../candy-kingdom/build/libcandylib.a
+LIBS	=	-L../../candy-kingdom/build/ -lcandylib -lz
+NAME    =	ex3
 
-all: ex3
+all: $(NAME)
 
 clean:
-	rm -f ex3 *.o
+	rm -f $(NAME) *.o
 
 #--------------------------------------------------------------------------#
 # Link
 #--------------------------------------------------------------------------#
 
-ex3: ex3.o $(DEPS)
-	$(CC) -o $@ ex3.o $(LIBS)
+$(NAME): $(NAME).o $(DEPS)
+	$(CC) -o $@ $(NAME).o $(LIBS)
 
 #--------------------------------------------------------------------------#
 # Compile
 #--------------------------------------------------------------------------#
 
-ex3.o: ex3.cpp ipasir.h makefile
-	$(CC) $(CFLAGS) -c ex3.cpp
+$(NAME).o: $(NAME).cpp ipasir.h makefile
+	$(CC) $(CFLAGS) -c $(NAME).cpp
