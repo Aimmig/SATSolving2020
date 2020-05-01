@@ -5,9 +5,6 @@ extern "C" {
 #include <fstream>
 #include <sstream>
 #include <iostream>
-#include <stdlib.h>
-#include <stdio.h>
-#include <ctype.h>
 #include <vector>
 
 /*
@@ -34,31 +31,32 @@ int decode_col(int var, int numColors, int numVertices){
 
 void addClauses(void* solver, int numVertices, int numColors){
 	int var = 0;
+	std::cout<<"c ";
 	for (int v=0; v<numVertices;v++){
 		for (int col=0; col<numColors; col++){
 			var = encode(col,v,numVertices);
 			ipasir_add(solver,var);
-			std::cout << var << " ";
+			std::cout<< var << " ";
 		}
 		std::cout << std::endl;
 		ipasir_add(solver,0);
 	}
-	std::cout<<"--------"<<std::endl;
+	std::cout<<"c--------"<<std::endl;
 }
 
 void addConflictingClauses(void* solver, int numColors, int numVertices, int v1, int v2){
-	std::cout<<v1 <<" "<<v2 <<std::endl;
+	//std::cout<<"c "<<v1 <<" "<<v2 <<std::endl;
 	for (int k=0; k<numColors; k++){
 		int var1 = -encode(k,v1,numVertices)+1;
 		ipasir_add(solver,var1);
-		std::cout<<var1<< " ";
+		std::cout<<"c "<<var1<< " ";
 		int var2 = -encode(k,v2,numVertices)+1;
 		ipasir_add(solver,var2);
 		std::cout<<var2<< " ";
 		ipasir_add(solver,0);
 		std::cout<<std::endl;
 	}
-	std::cout<<"------"<<std::endl;
+	std::cout<<"c------"<<std::endl;
 }
 
 bool betterFile(void* solver, const char* filename, int numColors, int* outVariables){
@@ -92,8 +90,8 @@ bool betterFile(void* solver, const char* filename, int numColors, int* outVaria
 		splitted.clear();
 	}
 	addClauses(solver,numVertices, numColors);
-	std::cout<<"c vertices" << numVertices <<std::endl;
-	std::cout<<"c edges " << numEdges <<std::endl;
+	std::cout<<"c Graph has " << numVertices<<" vertices"<<std::endl;
+	std::cout<<"c Graph has " << numEdges <<" edes"<<std::endl;
 	*outVariables = numVertices*numColors;
 	return true;
 }
@@ -101,14 +99,15 @@ bool betterFile(void* solver, const char* filename, int numColors, int* outVaria
 int main(int argc, char **argv) {
 	std::cout << "c Using the incremental SAT solver " << ipasir_signature() << std::endl;
 
-	if (argc != 2) {
-		puts("c USAGE: ./example <dimacs.cnf>");
+	if (argc != 3) {
+		puts("c USAGE: ./example <dimacs.cnf> <numColors>");
 		return 0;
 	}
 
 	void *solver = ipasir_init();
 	int variables = 0;
-	int colors = 7;
+	int colors = atoi(argv[2]);
+	std::cout<<"c Trying to color graph with "<< colors <<" Colors"<<std::endl;
 	bool loaded = betterFile(solver, argv[1], colors, &variables);
 	if (!loaded) {
 		std::cout << "c The input formula " << argv[1] << " could not be loaded." << std::endl;
