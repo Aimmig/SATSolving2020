@@ -44,10 +44,22 @@ void addClauses(void* solver, int numVertices, int numColors){
 	std::cout<<"c--------"<<std::endl;
 }
 
+int addMoreVertexClauses(void* solver, int color, int numVertices, int v1, int v2){
+	int var1 = -encode(color,v1,numVertices)+1;
+	ipasir_add(solver,var1);
+	std::cout<<"c "<<var1<< " ";
+	int var2 = -encode(color,v2,numVertices)+1;
+	ipasir_add(solver,var2);
+	std::cout<<var2<< " ";
+	ipasir_add(solver,0);
+	std::cout<<std::endl;
+	return color+1;
+}
+
 void addConflictingClauses(void* solver, int numColors, int numVertices, int v1, int v2){
 	//std::cout<<"c "<<v1 <<" "<<v2 <<std::endl;
 	for (int k=0; k<numColors; k++){
-		int var1 = -encode(k,v1,numVertices)+1;
+		/*int var1 = -encode(k,v1,numVertices)+1;
 		ipasir_add(solver,var1);
 		std::cout<<"c "<<var1<< " ";
 		int var2 = -encode(k,v2,numVertices)+1;
@@ -55,6 +67,8 @@ void addConflictingClauses(void* solver, int numColors, int numVertices, int v1,
 		std::cout<<var2<< " ";
 		ipasir_add(solver,0);
 		std::cout<<std::endl;
+		*/
+		addMoreVertexClauses(solver,k,numVertices,v1,v2);
 	}
 	std::cout<<"c------"<<std::endl;
 }
@@ -116,6 +130,10 @@ int main(int argc, char **argv) {
 	else {
 		std::cout << "c Loaded, solving" << std::endl;
 	}
+	int numVertices = variables/colors;
+	//colors = addMoreVertexClauses(solver,colors,numVertices,1,2);
+	//colors = addMoreVertexClauses(solver,colors,numVertices,1,2);
+
 
 	//ipasir_assume(solver, 1);
 	//ipasir_add(solver, 1);
@@ -132,7 +150,6 @@ int main(int argc, char **argv) {
 		//std::cout << "v ";
 
 		//int count = 1;
-		int numVertices = variables/colors;
 		//while (satRes == 10) {
 		//	std::vector<int> clause;
 			int vertex = 0;
