@@ -9,10 +9,22 @@ extern "C" {
 #include <ctype.h>
 #include <vector>
 
+/*
+ * returns a variable coresponding to a color and vertex
+ */
 int encode(int color, int vertex, int numVertices){
 	return 1+vertex+color*numVertices;
 }
 
+int parseNumber(FILE* f, int c){
+	int res = c - '0';
+	c = fgetc(f);
+	while(isdigit(c)){
+		res = res*10 + (c-'0');
+		c = fgetc(f);
+	}
+	return res;
+}
 
 /**
  * Reads a formula from a given file 
@@ -38,12 +50,13 @@ bool loadFormula(void* solver, const char* filename, int numColors, int* outVari
 			while(!isdigit(c)){
 			    c = fgetc(f);
 			}
-			int numVertices = c - '0';
+			/*int numVertices = c - '0';
 			c = fgetc(f);
 			while(isdigit(c)){
 				numVertices = numVertices*10 + (c-'0');
 				c = fgetc(f);
-			}
+			}*/
+			int numVertices = parseNumber(f,c);
 			std::cout << numVertices << std::endl;
 			int var = 0;
 			for (int v=0; v<numVertices;v++){
@@ -60,12 +73,13 @@ bool loadFormula(void* solver, const char* filename, int numColors, int* outVari
 		
 		// number
 		if (isdigit(c)) {
-			int num = c - '0';
+			/*int num = c - '0';
 			c = fgetc(f);
 			while (isdigit(c)) {
 				num = num*10 + (c-'0');
 				c = fgetc(f);
-			}
+			}*/
+			int num = parseNumber(f,c);
 			if (num > maxVar) {
 				maxVar = num;
 			}
