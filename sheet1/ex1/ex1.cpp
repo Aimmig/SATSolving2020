@@ -1,23 +1,3 @@
-/*
- Calculate number of variables and clauses for
- checking wether W(2,k) > n
-
- Using the encoding of the lecture we have:
- - for each integer 1,...n a variable x_i
- - some clauses to exclude all possibility of k equally spaced
-
- So trivally we have just n variables
-
- Calculating the clauses is a bit tricky
- Dividing the clauses in subset S_r, such that each subset
- exludes just the possibility spaced r appart
-
- 1,2,.......,k	   1,3,..,1+r*k
- 2,3,......,k+1    ....
- .............	   ....
- n-(k-1),....,n	   n-(k-1)*2,...,n    n-(k-1)*r
-*/
-
 
 extern "C" {
     #include "ipasir.h"
@@ -29,86 +9,119 @@ extern "C" {
 #include <ctype.h>
 #include <vector>
 
-/* The upper for equally spacing k from n */
-int upperBound(int n, int k){
-	return (n-1)/(k-1);
-}
-
-/*
- * Add all clauses that exclude the equally spaced items
- * with distant r
+/**
+ * Reads a formula from a given file 
  */
-int addappartClauses(void* solver, int n, int k, int r){
-	int res = 0;
-	//biggest starting index of variables for clauses
-	int maxInternal = n-(k-1)*r;
-	std::vector<int> variables;
-	for (int val = 1; val<=maxInternal; val++){
-		for (int v = 0; v < k; v++){
-			variables.push_back(val+v*r);
+bool loadFormula(void* solver, const char* filename, int* outVariables) {
+	FILE* f = fopen(filename, "r");
+
+	if (f == NULL) {
+		return false;
+	}
+
+	int maxVar = 0;
+	int c = 0;
+	bool neg = false;	
+	while (c != EOF) {
+		c = fgetc(f);
+
+		if (c == 'c' || c == 'p') { // skip comments and header
+			while(c != '\n') c = fgetc(f);
+			continue;
 		}
-		//add these claues positive & negative
-		res+=2;
-		for (auto l : variables){
-			ipasir_add(solver, l);
-		}
-		ipasir_add(solver,0);
-	
-		for (auto l : variables){
-			ipasir_add(solver, -l);
-		}
-		ipasir_add(solver,0);
 		
-		variables.clear();
-	}
-	return res;
-}
+		if (isspace(c)) continue; // skip whitespace
+		
+		if (c == '-') { // negative number coming
+			neg = true;
+			continue;
+		}
 
-/*
- * Adds all clauses for encoding the problem
- */
-void loadFormula(void* solver, int n, int k, int outVariables[]) {
-	int maxR = upperBound(n,k);
-	for (int r=1; r<=maxR; r++){
-		outVariables[1] += addappartClauses(solver,n,k,r);
+		// number
+		if (isdigit(c)) {
+			int num = c - '0';
+			c = fgetc(f);
+			while (isdigit(c)) {
+				num = num*10 + (c-'0');
+				c = fgetc(f);
+			}
+			if (neg) {
+				num *= -1;
+			}
+			neg = false;
+
+			if (abs(num) > maxVar) {
+				maxVar = abs(num);
+			}
+			// add to the solver
+			ipasir_add(solver, num);
+		}
 	}
-	outVariables[0]=n;
+
+	fclose(f);
+	*outVariables = maxVar;
+	return true;
 }
 
 int main(int argc, char **argv) {
 	std::cout << "c Using the incremental SAT solver " << ipasir_signature() << std::endl;
-	std::cout << "c This programm checks if W(2,k) > n" << std::endl;
-	if (argc != 3) {
-		puts("c USAGE: ./example <n> <k>");
+
+	if (argc != 2) {
+		puts("c USAGE: ./example <dimacs.cnf>");
 		return 0;
 	}
 
 	void *solver = ipasir_init();
-	int params[2] = {0,0};
-	int n = atoi(argv[1]);
-	int k = atoi(argv[2]);
-	loadFormula(solver, n, k, params);
+	int variables = 0;
+	bool loaded = loadFormula(solver, argv[1], &variables);
 
-	//ipasir_assume(solver,1);
+	if (!loaded) {
+		std::cout << "c The input formula " << argv[1] << " could not be loaded." << std::endl;
+		return 0;
+	}
+	else {
+		std::cout << "c Loaded, solving" << std::endl;
+	}
+
+	// ipasir_assume(solver, 1);
+
+	ipasir_add(solver, 1);
+	ipasir_add(solver, 0);
+
 	int satRes = ipasir_solve(solver);
-	
-	std::cout << "c Number of variables: " << params[0] << std::endl;
-	std::cout << "c Number of clauses: " << params[1] << std::endl;
-	
+
 	if (satRes == 20) {
 		std::cout << "c The input formula is unsatisfiable" << std::endl;
-		std::cout << "c This means W(2," << k << ") > " << n << " is false" << std::endl;
 	}
 	
 	else if (satRes == 10) {
 		std::cout << "c The input formula is satisfiable" << std::endl;
 		std::cout << "v ";
-		for (int var = 1; var <= params[0]; var++) {
-			int value = ipasir_val(solver, var);
-			std::cout << value << " ";
+
+		int count = 1;
+		while (satRes == 10) {
+			std::vector<int> clause;
+			for (int var = 1; var < variables; var++) {
+				int value = ipasir_val(solver, var);
+				std::cout << value << " ";
+				clause.push_back(-value);
+			}
+			std::cout << std::endl;
+
+			for (int lit : clause) {
+				ipasir_add(solver, lit);
+			}
+			ipasir_add(solver, 0);
+
+			// ipasir_assume(solver, 1);
+
+			satRes = ipasir_solve(solver);
+			clause.clear();
+			count++;
+			std::cout << "Found " << count << " solutions" << std::endl;
 		}
-		std::cout << std::endl;
-		std::cout << "c This means W(2," << k << ") > " << n << " is true" << std::endl;
 	}
+	
 	return 0;
+
 }
