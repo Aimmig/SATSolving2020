@@ -46,19 +46,16 @@ void enforceColor(void* solver, int color, int numVertices){
 
 /*
  * Decodes a variable into the vertex number
- * NOT CORRECTLY WORKING
  */
 int decode_vertex(int var, int numVertices){
-	int res = (abs(var)%numVertices)/2;
-	return res > 0 ? res : numVertices/2;
+	return 1+((var/2)-1)%numVertices;
 }
 
 /*
  * Decodes a variable into the corresponding color
  */
-int decode_col(int var, int numColors, int numVertices){
-	std::cout<<"c "<<var <<" "<<numColors<<" "<<numVertices<<std::endl;
-	return 1+(abs(var/2)-decode_vertex(var, numVertices))/numVertices;
+int decode_col(int var, int numVertices){
+	return 1+((var/2)-decode_vertex(var,numVertices))/numVertices;
 }
 
 void addClauses(void* solver, int numVertices, int numColors){
@@ -153,6 +150,7 @@ int main(int argc, char **argv) {
 	int numVertices = 0;
 	std::cout<<"c Trying to color graph with "<< colors <<" Colors"<<std::endl;
 	std::vector<std::pair<int,int>> edgelist = betterFile(solver, argv[1], colors, &numVertices);
+	
 	/*if (!loaded) {
 		std::cout << "c The input formula " << argv[1] << " could not be loaded." << std::endl;
 		return 0;
@@ -199,12 +197,11 @@ int main(int argc, char **argv) {
 			value = ipasir_val(solver, var);
 			if (value > 0){
 				vertex = decode_vertex(value,numVertices);
-				color = decode_col(value,colors,numVertices);
-				std::cout <<"c Variable "<<value<<" encodes:"<<std::endl;
-				std::cout <<"v Node " << vertex <<" gets color "<< color<<std::endl;
+				color = decode_col(value,numVertices);
+				//std::cout <<"v "<< vertex <<" "<< color<<std::endl;
+				std::cout << color <<" "<< vertex<<std::endl;
 			}
 		}
-		std::cout << std::endl;
 	}
 	return 0;
 }
