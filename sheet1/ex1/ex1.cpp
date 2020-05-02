@@ -27,6 +27,17 @@ int encode_neg(int color, int vertex, int numVertices){
 }
 
 /*
+ * 
+ */
+void enforceColor(void* solver, int color, int numVertices){
+	for (int v=0; v<numVertices;v++){
+		int activationLit = getActivationLiteral(v, color,numVertices);
+		//std::cout<<"Setting Activation literal -"<<activationLit<<std::endl;	
+		ipasir_assume(solver,-activationLit);
+	}
+}
+
+/*
  * Decodes a variable int the vertex number
  */
 int decode_vertex(int var, int numVertices){
@@ -51,11 +62,10 @@ void addClauses(void* solver, int numVertices, int numColors){
 			ipasir_add(solver,var);
 			std::cout<< var << " ";
 		}
-		/*int activationLit = getActivationLiteral(v,numColors,numVertices);
+		int activationLit = getActivationLiteral(v,numColors,numVertices);
 		ipasir_add(solver,activationLit);
-		std::cout<<activationLit;
-		std::cout << std::endl;
-		*/
+		//std::cout<<activationLit;
+		//std::cout << std::endl;
 		ipasir_add(solver,0);
 		
 	}
@@ -126,13 +136,14 @@ int main(int argc, char **argv) {
 	std::cout << "c Using the incremental SAT solver " << ipasir_signature() << std::endl;
 
 	if (argc != 3) {
-		puts("c USAGE: ./example <dimacs.cnf> <numColors>");
+		puts("c USAGE: ./example <dimacs.cnf> <minColorToTry>");
 		return 0;
 	}
 
 	void *solver = ipasir_init();
 	int variables = 0;
-	int colors = atoi(argv[2]);
+	int minColor = atoi(argv[2]);
+	int colors = minColor;
 	std::cout<<"c Trying to color graph with "<< colors <<" Colors"<<std::endl;
 	std::vector<std::pair<int,int>> edgelist = betterFile(solver, argv[1], colors, &variables);
 	/*if (!loaded) {
@@ -143,30 +154,31 @@ int main(int argc, char **argv) {
 		std::cout << "c Loaded, solving" << std::endl;
 	}*/
 	int numVertices = variables/(2*colors);
-	//colors = addMoreVertexClauses(solver,colors,numVertices,1,2);
-	//colors = addMoreVertexClauses(solver,colors,numVertices,1,2);
 
-
-	//ipasir_assume(solver, 1);
-	//ipasir_add(solver, 1);
-	//ipasir_add(solver, 0);
-	
-	/*for (int v=0; v<numVertices;v++){
-		int activationLit = getActivationLiteral(v, colors,numVertices);
-		//std::cout<<"Activation literal "<<activationLit<std::endl;
-		ipasir_assume(solver,-activationLit);
-	}*/
-	
+	enforceColor(solver,colors,numVertices);
 
 	int satRes = ipasir_solve(solver);
 
-	if (satRes == 20) {
+	while (satRes == 20) {
 		std::cout<<"c--------"<<std::endl;
 		std::cout << "c The input formula is unsatisfiable for "<<colors<<" colors" << std::endl;
-		//colors++;
 		std::cout << "c Now trying with "<<colors+1<<" colors"<<std::endl;
 		std::cout<<"c--------"<<std::endl;
 		addMoreVertexClauses(solver, colors, numVertices, edgelist);
+		colors++;
+		addClauses(solver,numVertices,colors);
+		for (int col = minColor; col <colors; col++){
+			for (int v=0; v<numVertices;v++){
+				int activationLit = getActivationLiteral(v, col,numVertices);
+				//std::cout<<"Setting Activation literal"<<activationLit<<std::endl;
+				ipasir_assume(solver,activationLit);
+			}
+		}
+		enforceColor(solver,colors,numVertices);
+
+		//colors++;
+		satRes = ipasir_solve(solver);
+		
 	}
 
 	
@@ -184,8 +196,8 @@ int main(int argc, char **argv) {
 				if (value > 0){
 					vertex = decode_vertex(value,numVertices);
 					color = decode_col(value,colors,numVertices);
-					std::cout <<"c Variable "<<value<<" encodes:"<<std::endl;
-					std::cout <<"v Node " << vertex <<" gets color "<< color<<std::endl;
+					//std::cout <<"c Variable "<<value<<" encodes:"<<std::endl;
+					//std::cout <<"v Node " << vertex <<" gets color "<< color<<std::endl;
 				}
 				//clause.push_back(-value);
 			}
@@ -203,6 +215,7 @@ int main(int argc, char **argv) {
 			//count++;
 			//std::cout << "Found " << count << " solutions" << std::endl;
 		//}
+			std::cout<<colors<<std::endl;
 	}
 	return 0;
 }
