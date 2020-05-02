@@ -8,22 +8,30 @@ extern "C" {
 #include <vector>
 
 /*
+ * 
+ */
+int getActivationLiteral(int vertex, int color, int numVertices){
+
+	return 2*(vertex)+1+2*numVertices*color;
+}
+
+/*
  * returns a variable coresponding to a color and vertex
  */
 int encode_pos(int color, int vertex, int numVertices){
-	return 1+vertex+color*numVertices;
+	return 2*(1+vertex+color*numVertices);
 }
 
 int encode_neg(int color, int vertex, int numVertices){
-	return -encode_pos(color,vertex,numVertices)+1;
+	return -encode_pos(color,vertex,numVertices)+2;
 }
 
 /*
  * Decodes a variable int the vertex number
  */
 int decode_vertex(int var, int numVertices){
-	int res = abs(var)%numVertices;
-	return res > 0 ? res : numVertices;
+	int res = (abs(var)%numVertices)/2;
+	return res > 0 ? res : numVertices/2;
 }
 
 /*
@@ -31,7 +39,7 @@ int decode_vertex(int var, int numVertices){
  */
 int decode_col(int var, int numColors, int numVertices){
 	std::cout<<"c "<<var <<" "<<numColors<<" "<<numVertices<<std::endl;
-	return 1+(abs(var)-decode_vertex(var, numVertices))/numVertices;
+	return 1+(abs(var/2)-decode_vertex(var, numVertices))/numVertices;
 }
 
 void addClauses(void* solver, int numVertices, int numColors){
@@ -43,8 +51,13 @@ void addClauses(void* solver, int numVertices, int numColors){
 			ipasir_add(solver,var);
 			std::cout<< var << " ";
 		}
+		/*int activationLit = getActivationLiteral(v,numColors,numVertices);
+		ipasir_add(solver,activationLit);
+		std::cout<<activationLit;
 		std::cout << std::endl;
+		*/
 		ipasir_add(solver,0);
+		
 	}
 	std::cout<<"c--------"<<std::endl;
 }
@@ -105,7 +118,7 @@ std::vector<std::pair<int,int>> betterFile(void* solver, const char* filename, i
 	addClauses(solver,numVertices, numColors);
 	std::cout<<"c Graph has " << numVertices<<" vertices"<<std::endl;
 	std::cout<<"c Graph has " << numEdges <<" edes"<<std::endl;
-	*outVariables = numVertices*numColors;
+	*outVariables = 2*numVertices*numColors;
 	return res;
 }
 
@@ -129,7 +142,7 @@ int main(int argc, char **argv) {
 	else {
 		std::cout << "c Loaded, solving" << std::endl;
 	}*/
-	int numVertices = variables/colors;
+	int numVertices = variables/(2*colors);
 	//colors = addMoreVertexClauses(solver,colors,numVertices,1,2);
 	//colors = addMoreVertexClauses(solver,colors,numVertices,1,2);
 
@@ -137,6 +150,13 @@ int main(int argc, char **argv) {
 	//ipasir_assume(solver, 1);
 	//ipasir_add(solver, 1);
 	//ipasir_add(solver, 0);
+	
+	/*for (int v=0; v<numVertices;v++){
+		int activationLit = getActivationLiteral(v, colors,numVertices);
+		//std::cout<<"Activation literal "<<activationLit<std::endl;
+		ipasir_assume(solver,-activationLit);
+	}*/
+	
 
 	int satRes = ipasir_solve(solver);
 
@@ -148,6 +168,7 @@ int main(int argc, char **argv) {
 		std::cout<<"c--------"<<std::endl;
 		addMoreVertexClauses(solver, colors, numVertices, edgelist);
 	}
+
 	
 	if (satRes == 10) {
 		std::cout << "c The input formula is satisfiable" << std::endl;
