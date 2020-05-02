@@ -10,8 +10,12 @@ extern "C" {
 /*
  * returns a variable coresponding to a color and vertex
  */
-int encode(int color, int vertex, int numVertices){
+int encode_pos(int color, int vertex, int numVertices){
 	return 1+vertex+color*numVertices;
+}
+
+int encode_neg(int color, int vertex, int numVertices){
+	return -encode_pos(color,vertex,numVertices)+1;
 }
 
 /*
@@ -35,7 +39,7 @@ void addClauses(void* solver, int numVertices, int numColors){
 	for (int v=0; v<numVertices;v++){
 		std::cout<<"c ";
 		for (int col=0; col<numColors; col++){
-			var = encode(col,v,numVertices);
+			var = encode_pos(col,v,numVertices);
 			ipasir_add(solver,var);
 			std::cout<< var << " ";
 		}
@@ -46,10 +50,10 @@ void addClauses(void* solver, int numVertices, int numColors){
 }
 
 void addOneVertexClauses(void* solver, int color, int numVertices, int v1, int v2){
-	int var1 = -encode(color,v1,numVertices)+1;
+	int var1 = encode_neg(color,v1,numVertices);
 	ipasir_add(solver,var1);
 	std::cout<<"c "<<var1<< " ";
-	int var2 = -encode(color,v2,numVertices)+1;
+	int var2 = encode_neg(color,v2,numVertices);
 	ipasir_add(solver,var2);
 	std::cout<<var2<< " ";
 	ipasir_add(solver,0);
@@ -137,10 +141,15 @@ int main(int argc, char **argv) {
 	int satRes = ipasir_solve(solver);
 
 	if (satRes == 20) {
-		std::cout << "c The input formula is unsatisfiable" << std::endl;
+		std::cout<<"c--------"<<std::endl;
+		std::cout << "c The input formula is unsatisfiable for "<<colors<<" colors" << std::endl;
+		//colors++;
+		std::cout << "c Now trying with "<<colors+1<<" colors"<<std::endl;
+		std::cout<<"c--------"<<std::endl;
+		addMoreVertexClauses(solver, colors, numVertices, edgelist);
 	}
 	
-	else if (satRes == 10) {
+	if (satRes == 10) {
 		std::cout << "c The input formula is satisfiable" << std::endl;
 		//std::cout << "v ";
 
