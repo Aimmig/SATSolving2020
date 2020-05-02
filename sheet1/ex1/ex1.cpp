@@ -26,7 +26,8 @@ int decode_vertex(int var, int numVertices){
  * Decodes a variable into the corresponding color
  */
 int decode_col(int var, int numColors, int numVertices){
-	return ((abs(var)-decode_vertex(var, numVertices))%numColors) +1 ; 
+	std::cout<<"c "<<var <<" "<<numColors<<" "<<numVertices<<std::endl;
+	return 1+(abs(var)-decode_vertex(var, numVertices))/numVertices;
 }
 
 void addClauses(void* solver, int numVertices, int numColors){
@@ -159,6 +160,7 @@ int main(int argc, char **argv) {
 				if (value > 0){
 					vertex = decode_vertex(value,numVertices);
 					color = decode_col(value,colors,numVertices);
+					std::cout <<"c Variable "<<value<<" encodes:"<<std::endl;
 					std::cout <<"v Node " << vertex <<" gets color "<< color<<std::endl;
 				}
 				//clause.push_back(-value);
