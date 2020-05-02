@@ -45,7 +45,8 @@ void enforceColor(void* solver, int color, int numVertices){
 }
 
 /*
- * Decodes a variable int the vertex number
+ * Decodes a variable into the vertex number
+ * NOT CORRECTLY WORKING
  */
 int decode_vertex(int var, int numVertices){
 	int res = (abs(var)%numVertices)/2;
@@ -72,7 +73,7 @@ void addClauses(void* solver, int numVertices, int numColors){
 		int activationLit = getActivationLiteral(v,numColors,numVertices);
 		ipasir_add(solver,activationLit);
 		//std::cout<<activationLit;
-		//std::cout << std::endl;
+		std::cout << std::endl;
 		ipasir_add(solver,0);
 		
 	}
@@ -82,12 +83,12 @@ void addClauses(void* solver, int numVertices, int numColors){
 void addOneVertexClauses(void* solver, int color, int numVertices, int v1, int v2){
 	int var1 = encode_neg(color,v1,numVertices);
 	ipasir_add(solver,var1);
-	std::cout<<"c "<<var1<< " ";
+	//std::cout<<"c "<<var1<< " ";
 	int var2 = encode_neg(color,v2,numVertices);
 	ipasir_add(solver,var2);
-	std::cout<<var2<< " ";
+	//std::cout<<var2<< " ";
 	ipasir_add(solver,0);
-	std::cout<<std::endl;
+	//std::cout<<std::endl;
 }
 
 int addMoreVertexClauses(void* solver, int color, int numVertices, std::vector<std::pair<int,int>> edgeList){
@@ -108,7 +109,6 @@ std::vector<std::pair<int,int>> betterFile(void* solver, const char* filename, i
 	std::ifstream infile(filename);
 	std::string line;
 	int numVertices = 0;
-	int numEdges = 0;
 	std::vector<std::pair<int,int>> res;
 	while(std::getline(infile,line)){
 		std::vector<std::string> splitted;
@@ -119,7 +119,7 @@ std::vector<std::pair<int,int>> betterFile(void* solver, const char* filename, i
 		}
 		if (splitted[0].compare(std::string("p")) == 0){
 			numVertices = std::stoi(splitted[2]);
-			numEdges = std::stoi(splitted[3]);
+			//numEdges = std::stoi(splitted[3]);
 		}
 		if (splitted[0].compare(std::string("e")) == 0){
 			std::pair<int,int> edge;
@@ -133,8 +133,8 @@ std::vector<std::pair<int,int>> betterFile(void* solver, const char* filename, i
 	}
 	addConflictingClauses(solver, numColors, numVertices, res);
 	addClauses(solver,numVertices, numColors);
-	std::cout<<"c Graph has " << numVertices<<" vertices"<<std::endl;
-	std::cout<<"c Graph has " << numEdges <<" edes"<<std::endl;
+	//std::cout<<"c Graph has " << numVertices<<" vertices"<<std::endl;
+	//std::cout<<"c Graph has " << numEdges <<" edes"<<std::endl;
 	*outVariables = numVertices;
 	return res;
 }
@@ -168,13 +168,12 @@ int main(int argc, char **argv) {
 	
 	while (satRes == 20) {
 		std::cout<<"c--------"<<std::endl;
-		std::cout << "c The input formula is unsatisfiable for "<<colors<<" colors" << std::endl;
+		std::cout << "c The graph is not colorable with "<<colors<<" colors" << std::endl;
 		std::cout << "c Now trying with "<<colors+1<<" colors"<<std::endl;
 		std::cout<<"c--------"<<std::endl;
 		addMoreVertexClauses(solver, colors, numVertices, edgelist);
 		colors++;
 		addClauses(solver,numVertices,colors);
-		//variables = 2*numVertices*colors;
 
 		for (int col = minColor; col <colors; col++){
 			for (int v=0; v<numVertices;v++){
@@ -188,22 +187,24 @@ int main(int argc, char **argv) {
 	}
 	
 	if (satRes == 10) {
-		std::cout << "c The input formula is satisfiable" << std::endl;
-			int vertex = 0;
-			int color = 0;
-			int variables = getNumVariables(numVertices,colors);
-				
-			for (int var = 1; var <= variables; var++) {
-				int value = ipasir_val(solver, var);
-				if (value > 0 && value %2 == 0){
-					vertex = decode_vertex(value,numVertices);
-					color = decode_col(value,colors,numVertices);
-					std::cout <<"c Variable "<<value<<" encodes:"<<std::endl;
-					std::cout <<"v Node " << vertex <<" gets color "<< color<<std::endl;
-				}
+		std::cout << "c The graph is colorable with " <<colors<<" colors"<< std::endl;
+		std::cout << "c The output format is: <node> <color>"<< std::endl;
+		int vertex = 0;
+		int color = 0;
+		int variables = getNumVariables(numVertices,colors);
+		int value = 0;
+		
+		//only request values for even variables (odd are activations literals)
+		for (int var = 2; var <= variables; var+=2) {
+			value = ipasir_val(solver, var);
+			if (value > 0){
+				vertex = decode_vertex(value,numVertices);
+				color = decode_col(value,colors,numVertices);
+				std::cout <<"c Variable "<<value<<" encodes:"<<std::endl;
+				std::cout <<"v Node " << vertex <<" gets color "<< color<<std::endl;
 			}
-			std::cout << std::endl;
-			std::cout<<colors<<std::endl;
+		}
+		std::cout << std::endl;
 	}
 	return 0;
 }

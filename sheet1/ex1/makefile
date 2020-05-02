@@ -3,7 +3,7 @@
 # a specific compiler or specific compile flags.
 #--------------------------------------------------------------------------#
 
-CC	    =	g++ -std=c++11
+CC	    =	g++ -std=c++17
 CFLAGS	=	-Wall -DNDEBUG -O3
 
 DEPS	=	../../candy-kingdom/build/libcandylib.a
