@@ -8,11 +8,18 @@ extern "C" {
 #include <vector>
 
 /*
- * 
+ * Encode an artifical activation literal
  */
 int getActivationLiteral(int vertex, int color, int numVertices){
 
 	return 2*(vertex)+1+2*numVertices*color;
+}
+
+/*
+ * Maximum number of (acutal) variables
+ */
+int getNumVariables(int numVertices, int numColors){
+	return 2*numVertices*numColors;
 }
 
 /*
@@ -27,7 +34,7 @@ int encode_neg(int color, int vertex, int numVertices){
 }
 
 /*
- * 
+ * Enforces the number of colors by setting all activation literals acordingly
  */
 void enforceColor(void* solver, int color, int numVertices){
 	for (int v=0; v<numVertices;v++){
@@ -128,7 +135,7 @@ std::vector<std::pair<int,int>> betterFile(void* solver, const char* filename, i
 	addClauses(solver,numVertices, numColors);
 	std::cout<<"c Graph has " << numVertices<<" vertices"<<std::endl;
 	std::cout<<"c Graph has " << numEdges <<" edes"<<std::endl;
-	*outVariables = 2*numVertices*numColors;
+	*outVariables = numVertices;
 	return res;
 }
 
@@ -141,11 +148,11 @@ int main(int argc, char **argv) {
 	}
 
 	void *solver = ipasir_init();
-	int variables = 0;
 	int minColor = atoi(argv[2]);
 	int colors = minColor;
+	int numVertices = 0;
 	std::cout<<"c Trying to color graph with "<< colors <<" Colors"<<std::endl;
-	std::vector<std::pair<int,int>> edgelist = betterFile(solver, argv[1], colors, &variables);
+	std::vector<std::pair<int,int>> edgelist = betterFile(solver, argv[1], colors, &numVertices);
 	/*if (!loaded) {
 		std::cout << "c The input formula " << argv[1] << " could not be loaded." << std::endl;
 		return 0;
@@ -153,12 +160,12 @@ int main(int argc, char **argv) {
 	else {
 		std::cout << "c Loaded, solving" << std::endl;
 	}*/
-	int numVertices = variables/(2*colors);
 
 	enforceColor(solver,colors,numVertices);
 
 	int satRes = ipasir_solve(solver);
 
+	
 	while (satRes == 20) {
 		std::cout<<"c--------"<<std::endl;
 		std::cout << "c The input formula is unsatisfiable for "<<colors<<" colors" << std::endl;
@@ -167,6 +174,8 @@ int main(int argc, char **argv) {
 		addMoreVertexClauses(solver, colors, numVertices, edgelist);
 		colors++;
 		addClauses(solver,numVertices,colors);
+		//variables = 2*numVertices*colors;
+
 		for (int col = minColor; col <colors; col++){
 			for (int v=0; v<numVertices;v++){
 				int activationLit = getActivationLiteral(v, col,numVertices);
@@ -175,46 +184,25 @@ int main(int argc, char **argv) {
 			}
 		}
 		enforceColor(solver,colors,numVertices);
-
-		//colors++;
 		satRes = ipasir_solve(solver);
-		
 	}
-
 	
 	if (satRes == 10) {
 		std::cout << "c The input formula is satisfiable" << std::endl;
-		//std::cout << "v ";
-
-		//int count = 1;
-		//while (satRes == 10) {
-		//	std::vector<int> clause;
 			int vertex = 0;
 			int color = 0;
+			int variables = getNumVariables(numVertices,colors);
+				
 			for (int var = 1; var <= variables; var++) {
 				int value = ipasir_val(solver, var);
-				if (value > 0){
+				if (value > 0 && value %2 == 0){
 					vertex = decode_vertex(value,numVertices);
 					color = decode_col(value,colors,numVertices);
-					//std::cout <<"c Variable "<<value<<" encodes:"<<std::endl;
-					//std::cout <<"v Node " << vertex <<" gets color "<< color<<std::endl;
+					std::cout <<"c Variable "<<value<<" encodes:"<<std::endl;
+					std::cout <<"v Node " << vertex <<" gets color "<< color<<std::endl;
 				}
-				//clause.push_back(-value);
 			}
 			std::cout << std::endl;
-
-			/*for (int lit : clause) {
-				ipasir_add(solver, lit);
-			}
-			ipasir_add(solver, 0);
-			*/
-			// ipasir_assume(solver, 1);
-
-			//satRes = ipasir_solve(solver);
-			//clause.clear();
-			//count++;
-			//std::cout << "Found " << count << " solutions" << std::endl;
-		//}
 			std::cout<<colors<<std::endl;
 	}
 	return 0;
