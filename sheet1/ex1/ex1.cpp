@@ -32,8 +32,8 @@ int decode_col(int var, int numColors, int numVertices){
 
 void addClauses(void* solver, int numVertices, int numColors){
 	int var = 0;
-	std::cout<<"c ";
 	for (int v=0; v<numVertices;v++){
+		std::cout<<"c ";
 		for (int col=0; col<numColors; col++){
 			var = encode(col,v,numVertices);
 			ipasir_add(solver,var);
@@ -45,7 +45,7 @@ void addClauses(void* solver, int numVertices, int numColors){
 	std::cout<<"c--------"<<std::endl;
 }
 
-int addMoreVertexClauses(void* solver, int color, int numVertices, int v1, int v2){
+void addOneVertexClauses(void* solver, int color, int numVertices, int v1, int v2){
 	int var1 = -encode(color,v1,numVertices)+1;
 	ipasir_add(solver,var1);
 	std::cout<<"c "<<var1<< " ";
@@ -54,32 +54,28 @@ int addMoreVertexClauses(void* solver, int color, int numVertices, int v1, int v
 	std::cout<<var2<< " ";
 	ipasir_add(solver,0);
 	std::cout<<std::endl;
+}
+
+int addMoreVertexClauses(void* solver, int color, int numVertices, std::vector<std::pair<int,int>> edgeList){
+	for (auto e : edgeList){
+		addOneVertexClauses(solver, color, numVertices, e.first, e.second);
+	}
 	return color+1;
 }
 
-void addConflictingClauses(void* solver, int numColors, int numVertices, int v1, int v2){
-	//std::cout<<"c "<<v1 <<" "<<v2 <<std::endl;
+void addConflictingClauses(void* solver, int numColors, int numVertices, std::vector<std::pair<int,int>> edgelist){
 	for (int k=0; k<numColors; k++){
-		/*int var1 = -encode(k,v1,numVertices)+1;
-		ipasir_add(solver,var1);
-		std::cout<<"c "<<var1<< " ";
-		int var2 = -encode(k,v2,numVertices)+1;
-		ipasir_add(solver,var2);
-		std::cout<<var2<< " ";
-		ipasir_add(solver,0);
-		std::cout<<std::endl;
-		*/
-		addMoreVertexClauses(solver,k,numVertices,v1,v2);
+		addMoreVertexClauses(solver,k,numVertices,edgelist);
 	}
 	std::cout<<"c------"<<std::endl;
 }
 
-bool betterFile(void* solver, const char* filename, int numColors, int* outVariables){
+std::vector<std::pair<int,int>> betterFile(void* solver, const char* filename, int numColors, int* outVariables){
 	std::ifstream infile(filename);
 	std::string line;
 	int numVertices = 0;
 	int numEdges = 0;
-  	std::vector<int> edge;	
+	std::vector<std::pair<int,int>> res;
 	while(std::getline(infile,line)){
 		std::vector<std::string> splitted;
 		std::istringstream iss(line);
@@ -92,23 +88,21 @@ bool betterFile(void* solver, const char* filename, int numColors, int* outVaria
 			numEdges = std::stoi(splitted[3]);
 		}
 		if (splitted[0].compare(std::string("e")) == 0){
+			std::pair<int,int> edge;
 			int v1 = std::stoi(splitted[1]);
 			int v2 = std::stoi(splitted[2]);
-			edge.push_back(v1);
-			edge.push_back(v2);
-			std::cout<<std::endl;
-		}
-		if (!edge.empty()){
-			addConflictingClauses(solver, numColors, numVertices, edge[0], edge[1]);
-			edge.clear();
+			edge.first = v1;
+			edge.second = v2;
+			res.push_back(edge);
 		}
 		splitted.clear();
 	}
+	addConflictingClauses(solver, numColors, numVertices, res);
 	addClauses(solver,numVertices, numColors);
 	std::cout<<"c Graph has " << numVertices<<" vertices"<<std::endl;
 	std::cout<<"c Graph has " << numEdges <<" edes"<<std::endl;
 	*outVariables = numVertices*numColors;
-	return true;
+	return res;
 }
 
 int main(int argc, char **argv) {
@@ -123,14 +117,14 @@ int main(int argc, char **argv) {
 	int variables = 0;
 	int colors = atoi(argv[2]);
 	std::cout<<"c Trying to color graph with "<< colors <<" Colors"<<std::endl;
-	bool loaded = betterFile(solver, argv[1], colors, &variables);
-	if (!loaded) {
+	std::vector<std::pair<int,int>> edgelist = betterFile(solver, argv[1], colors, &variables);
+	/*if (!loaded) {
 		std::cout << "c The input formula " << argv[1] << " could not be loaded." << std::endl;
 		return 0;
 	}
 	else {
 		std::cout << "c Loaded, solving" << std::endl;
-	}
+	}*/
 	int numVertices = variables/colors;
 	//colors = addMoreVertexClauses(solver,colors,numVertices,1,2);
 	//colors = addMoreVertexClauses(solver,colors,numVertices,1,2);
