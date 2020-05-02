@@ -37,8 +37,9 @@ int encode_neg(int color, int vertex, int numVertices){
  * Enforces the number of colors by setting all activation literals acordingly
  */
 void enforceColor(void* solver, int color, int numVertices){
+	int activationLit = 0;
 	for (int v=0; v<numVertices;v++){
-		int activationLit = getActivationLiteral(v, color,numVertices);
+		activationLit = getActivationLiteral(v, color,numVertices);
 		//std::cout<<"Setting Activation literal -"<<activationLit<<std::endl;	
 		ipasir_assume(solver,-activationLit);
 	}
@@ -58,50 +59,62 @@ int decode_col(int var, int numVertices){
 	return 1+((var/2)-decode_vertex(var,numVertices))/numVertices;
 }
 
+/*
+ * Add clauses such that each vertex gets a color:
+ * u_1,u_2,...,u_c,u_a for each vertex u
+ * where u_a is an additional activation literal
+ */
 void addClauses(void* solver, int numVertices, int numColors){
 	int var = 0;
+	int activationLit = 0;
 	for (int v=0; v<numVertices;v++){
-		std::cout<<"c ";
+		//std::cout<<"c ";
 		for (int col=0; col<numColors; col++){
 			var = encode_pos(col,v,numVertices);
 			ipasir_add(solver,var);
-			std::cout<< var << " ";
+			//std::cout<< var << " ";
 		}
-		int activationLit = getActivationLiteral(v,numColors,numVertices);
+		activationLit = getActivationLiteral(v,numColors,numVertices);
 		ipasir_add(solver,activationLit);
 		//std::cout<<activationLit;
-		std::cout << std::endl;
+		//std::cout << std::endl;
 		ipasir_add(solver,0);
 		
 	}
-	std::cout<<"c--------"<<std::endl;
+	//std::cout<<"c--------"<<std::endl;
 }
 
-void addOneVertexClauses(void* solver, int color, int numVertices, int v1, int v2){
-	int var1 = encode_neg(color,v1,numVertices);
-	ipasir_add(solver,var1);
-	//std::cout<<"c "<<var1<< " ";
-	int var2 = encode_neg(color,v2,numVertices);
-	ipasir_add(solver,var2);
-	//std::cout<<var2<< " ";
-	ipasir_add(solver,0);
-	//std::cout<<std::endl;
-}
-
-int addMoreVertexClauses(void* solver, int color, int numVertices, std::vector<std::pair<int,int>> edgeList){
+/*
+ * Add Clause such for e=(u,v) u & v have different colors:
+ * -u_c,-v_c
+ */
+void addMoreVertexClauses(void* solver, int color, int numVertices, std::vector<std::pair<int,int>> edgeList){
 	for (auto e : edgeList){
-		addOneVertexClauses(solver, color, numVertices, e.first, e.second);
+		int var1 = encode_neg(color,e.first,numVertices);
+		ipasir_add(solver,var1);
+		//std::cout<<"c "<<var1<< " ";
+		int var2 = encode_neg(color,e.second,numVertices);
+		ipasir_add(solver,var2);
+		//std::cout<<var2<< " ";
+		ipasir_add(solver,0);
+		//std::cout<<std::endl;
 	}
-	return color+1;
 }
 
+/*
+ * Add all the conflicting clauses for all edges
+ */
 void addConflictingClauses(void* solver, int numColors, int numVertices, std::vector<std::pair<int,int>> edgelist){
 	for (int k=0; k<numColors; k++){
 		addMoreVertexClauses(solver,k,numVertices,edgelist);
 	}
-	std::cout<<"c------"<<std::endl;
+	//std::cout<<"c------"<<std::endl;
 }
 
+/*
+ * Read the graph from file & encode the coloring problem
+ * returns vector with all edges
+ */
 std::vector<std::pair<int,int>> betterFile(void* solver, const char* filename, int numColors, int* outVariables){
 	std::ifstream infile(filename);
 	std::string line;
@@ -165,10 +178,10 @@ int main(int argc, char **argv) {
 
 	
 	while (satRes == 20) {
-		std::cout<<"c--------"<<std::endl;
-		std::cout << "c The graph is not colorable with "<<colors<<" colors" << std::endl;
-		std::cout << "c Now trying with "<<colors+1<<" colors"<<std::endl;
-		std::cout<<"c--------"<<std::endl;
+		//std::cout<<"c--------"<<std::endl;
+		std::cout<<"c The graph is not colorable with "<<colors<<" colors" << std::endl;
+		std::cout<<"c Now trying with "<<colors+1<<" colors"<<std::endl;
+		//std::cout<<"c--------"<<std::endl;
 		addMoreVertexClauses(solver, colors, numVertices, edgelist);
 		colors++;
 		addClauses(solver,numVertices,colors);
@@ -198,8 +211,7 @@ int main(int argc, char **argv) {
 			if (value > 0){
 				vertex = decode_vertex(value,numVertices);
 				color = decode_col(value,numVertices);
-				//std::cout <<"v "<< vertex <<" "<< color<<std::endl;
-				std::cout << color <<" "<< vertex<<std::endl;
+				std::cout <<"v "<< vertex <<" "<< color<<std::endl;
 			}
 		}
 	}
