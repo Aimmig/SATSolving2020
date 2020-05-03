@@ -57,15 +57,15 @@ void addBlockClauses(void* solver, int num, int k){
 			for(int j=0; j<k;j++){
 				for (int u=0; u<k; u++){
 					var = encode_block(u,j,b,num,k,n,s);
-					std::cout<<var<<" ";
+					//std::cout<<var<<" ";
 					ipasir_add(solver,var);
 				}
 			}
 			ipasir_add(solver,0);
-			std::cout<<std::endl;
+			//std::cout<<std::endl;
 		}
 	}
-	std::cout<<"----"<<std::endl;
+	//std::cout<<"----"<<std::endl;
 }
 
 /*
@@ -82,7 +82,7 @@ void addConflictingClauses(void* solver, int k){
 				for (int n2=0; n2<n1; n2++){
 					l1 = -encode(n,row,col,n1);
 					l2 = -encode(n,row,col,n2);
-					std::cout<<l1<<" "<<l2<<std::endl;
+					//std::cout<<l1<<" "<<l2<<std::endl;
 					ipasir_add(solver,l1);
 					ipasir_add(solver,l2);
 					ipasir_add(solver,0);
@@ -102,21 +102,21 @@ void addRules(void* solver, int k){
 			//clause for rows
 			for (int c=0; c<n; c++){
 				int var = encode(n,r,c,i);
-				std::cout<<var<<" ";
+				//std::cout<<var<<" ";
 				ipasir_add(solver,var);
 			}
 			ipasir_add(solver,0);
-			std::cout<<std::endl;
+			//std::cout<<std::endl;
 			//clauses for colums
 			for (int c=0; c<n; c++){
 				int var = encode(n,c,r,i);
-				std::cout<<var<<" ";
+				//std::cout<<var<<" ";
 				ipasir_add(solver,var);
 			}
 			ipasir_add(solver,0);
-			std::cout<<std::endl;
+			//std::cout<<std::endl;
 		}
-		std::cout<<"----"<<std::endl;
+		//std::cout<<"----"<<std::endl;
 		//clauess for blocks
 		addBlockClauses(solver, i,k);
 	}
@@ -129,7 +129,7 @@ void addRules(void* solver, int k){
  */
 void assumeCell(void* solver, int n, int row, int col, int val){
 	int var = encode(n, row, col, val);
-	std::cout<<var<<" ";
+	//std::cout<<var<<" ";
 	ipasir_assume(solver, var);
 }
 
@@ -157,11 +157,11 @@ int betterFile(void* solver, const char* filename){
 			val = std::stoi(part);
 			if (val){
 				val--;
-				std::cout<<"Assuming cell"<<"at "<<row+1<<" "<<col+1<<"with "<<val+1<<std::endl;
+				//std::cout<<"Assuming cell"<<"at "<<row+1<<" "<<col+1<<"with "<<val+1<<std::endl;
 				assumeCell(solver, n, row, col, val);
 			}
 		}
-		std::cout<<std::endl;
+		//std::cout<<std::endl;
 	}
 	return k;
 }
