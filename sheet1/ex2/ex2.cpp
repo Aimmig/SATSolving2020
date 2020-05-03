@@ -11,15 +11,46 @@ extern "C" {
 /*
  *
  */
-int encode_pos(int row, int col, int val){
-	return 0;
+int encode(int n, int row, int col, int val){
+	return (1+n*(row-1)+(col-1))+(val-1)*n*n;
 }
 
 /*
  *
  */
-void assumeCell(void* solver, int row, int col, int val){
-	
+void addRules(void* solver, int k){
+	int n=k*k;
+	//TO-DO anpassen für jede Zahl
+	//for (int i=1; i<=n;i++){
+		int i=1;
+		for (int r=1; r<=n; r++){
+			for (int c=1; c<=n; c++){
+				std::cout<<encode(n,r,c,i)<<" ";
+			}
+			std::cout<<std::endl;
+			for (int c=1; c<=n; c++){
+				std::cout<<encode(n,c,r,i)<<" ";
+			}
+			std::cout<<std::endl;
+		}
+		//TO-DO: add condition for each block
+		for (int b=0;b<k;b++){
+			for(int j=1; j<=k;j++){
+				for (int u=1; u<=k; u++){
+					std::cout<<u+(j-1)*n+b*k<<" ";
+				}
+			}
+			std::cout<<std::endl;
+		}
+	//}
+}
+
+/*
+ *
+ */
+void assumeCell(void* solver, int n, int row, int col, int val){
+	int var = encode(n, row, col, val);
+	ipasir_assume(solver, var);
 }
 
 /*
@@ -33,20 +64,23 @@ int betterFile(void* solver, const char* filename, int* outVariables){
 	int k = std::stoi(line);
 	int n = k*k;
 	int val = 0;
+	
+	addRules(solver,k);
 	std::cout<<"Solving sudok of size "<<k<<std::endl;
 	
 	for (int row =1; row<=n; row++){
 		std::getline(infile,line);
 		std::istringstream iss(line);
 		std::string part;
-		//std::cout<<line<<std::endl;
 		for (int col=1; col<=n; col++){
 			iss >> part;
 			val = std::stoi(part);
-			std::cout<<val<<" ";
+			if (val){
+				std::cout<<val<<" ";
+				assumeCell(solver, k, row, col, val);
+			}
 		}
 		std::cout<<std::endl;
-		//splitted.clear();
 	}
 	/*
 		while(iss >> part){
@@ -81,7 +115,8 @@ int main(int argc, char **argv) {
 
 	void *solver = ipasir_init();
 	int numVertices = 0;
-	int edgelist = betterFile(solver, argv[1], &numVertices);
+	//int edgelist = 
+	betterFile(solver, argv[1], &numVertices);
 	
 	/*if (!loaded) {
 		std::cout << "c The input formula " << argv[1] << " could not be loaded." << std::endl;
