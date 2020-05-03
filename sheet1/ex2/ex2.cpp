@@ -2,6 +2,7 @@ extern "C" {
     #include "ipasir.h"
 }
 
+#include <math.h>
 #include <fstream>
 #include <sstream>
 #include <iostream>
@@ -38,6 +39,27 @@ void addBlockClauses(void* solver, int num, int k){
 	std::cout<<"----"<<std::endl;
 }
 
+void addConflictingClauses(void* solver, int k){
+	//TO-DO
+	int n=k*k;
+	int l1 = 0;
+	int l2 = 0;
+	for (int row=0; row<n; row++){
+		for (int col=0; col<n; col++){
+			for (int n1=0; n1<n; n1++){
+				for (int n2=0; n2<n1; n2++){
+					l1 = -encode(n,row,col,n1);
+					l2 = -encode(n,row,col,n2);
+					std::cout<<l1<<" "<<l2<<std::endl;
+					ipasir_add(solver,l1);
+					ipasir_add(solver,l2);
+					ipasir_add(solver,0);
+				}
+			}
+		}
+	}
+}
+
 /*
  *
  */
@@ -65,6 +87,7 @@ void addRules(void* solver, int k){
 		std::cout<<"----"<<std::endl;
 		addBlockClauses(solver, i,k);
 	}
+	addConflictingClauses(solver,k);
 }
 
 /*
@@ -72,6 +95,7 @@ void addRules(void* solver, int k){
  */
 void assumeCell(void* solver, int n, int row, int col, int val){
 	int var = encode(n, row, col, val);
+	std::cout<<var<<" ";
 	ipasir_assume(solver, var);
 }
 
@@ -79,7 +103,7 @@ void assumeCell(void* solver, int n, int row, int col, int val){
  * Read the graph from file & encode the coloring problem
  * returns vector with all edges
  */
-int betterFile(void* solver, const char* filename, int* outVariables){
+int betterFile(void* solver, const char* filename){
 	std::ifstream infile(filename);
 	std::string line;
 	std::getline(infile,line);
@@ -90,21 +114,22 @@ int betterFile(void* solver, const char* filename, int* outVariables){
 	addRules(solver,k);
 	std::cout<<"Solving sudok of size "<<k<<std::endl;
 	
-	for (int row =1; row<=n; row++){
+	for (int row =0; row<n; row++){
 		std::getline(infile,line);
 		std::istringstream iss(line);
 		std::string part;
-		for (int col=1; col<=n; col++){
+		for (int col=0; col<n; col++){
 			iss >> part;
 			val = std::stoi(part);
 			if (val){
-				std::cout<<val<<" ";
-				assumeCell(solver, k, row, col, val);
+				val--;
+				std::cout<<"Assuming cell"<<"at "<<row+1<<" "<<col+1<<"with "<<val+1<<std::endl;
+				assumeCell(solver, n, row, col, val);
 			}
 		}
 		std::cout<<std::endl;
 	}
-	return 0;
+	return k;
 }
 
 int main(int argc, char **argv) {
@@ -116,8 +141,8 @@ int main(int argc, char **argv) {
 	}
 
 	void *solver = ipasir_init();
-	int k = 0;
-	betterFile(solver, argv[1], &k);
+	int k = betterFile(solver, argv[1]);
+	int maxVar = (int)std::pow(k*k,3);
 	
 	/*if (!loaded) {
 		std::cout << "c The input formula " << argv[1] << " could not be loaded." << std::endl;
@@ -136,16 +161,18 @@ int main(int argc, char **argv) {
 	}
 	
 	if (satRes == 10) {
+		int value = 0;
 		std::cout<<"Solutin for sudoku found"<<std::endl;
 		//only request values for even variables (odd are activations literals)
-		/*for (int var = 2; var <= variables; var+=2) {
+		for (int var = 1; var <= maxVar; var+=1) {
 			value = ipasir_val(solver, var);
 			if (value > 0){
-				vertex = decode_vertex(value,numVertices);
-				color = decode_col(value,numVertices);
-				std::cout <<"v "<< vertex <<" "<< color<<std::endl;
+				//vertex = decode_vertex(value,numVertices);
+				//color = decode_col(value,numVertices);
+				//std::cout <<"v "<< vertex <<" "<< color<<std::endl;
+				std::cout <<value<<" "<<std::endl;
 			}
-		}*/
+		}
 	}
 	return 0;
 }
