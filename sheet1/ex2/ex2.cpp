@@ -13,7 +13,20 @@ extern "C" {
  *
  */
 int encode(int n, int row, int col, int val){
-	return (1+n*(row)+(col))+(val)*n*n;
+	return 1+n*(row)+col+(val)*n*n;
+}
+
+int decode_col(int n, int val){
+	int res =val%n;
+	return res > 0 ? res : n;
+}
+
+int decode_row(int n, int val){
+	return ((((val-1)%(n*n))-decode_col(n, val)+1)/n) + 1;
+}
+
+int decode_val(int n, int val){
+	return 1+(((val-1)-decode_col(n,val)+1)/n)/n;
 }
 
 int encode_block(int u, int j, int b, int i, int k,int n, int s){
@@ -142,7 +155,8 @@ int main(int argc, char **argv) {
 
 	void *solver = ipasir_init();
 	int k = betterFile(solver, argv[1]);
-	int maxVar = (int)std::pow(k*k,3);
+	int n = k*k;
+	int maxVar = (int)std::pow(n,3);
 	
 	/*if (!loaded) {
 		std::cout << "c The input formula " << argv[1] << " could not be loaded." << std::endl;
@@ -170,7 +184,7 @@ int main(int argc, char **argv) {
 				//vertex = decode_vertex(value,numVertices);
 				//color = decode_col(value,numVertices);
 				//std::cout <<"v "<< vertex <<" "<< color<<std::endl;
-				std::cout <<value<<" "<<std::endl;
+				std::cout <<" "<<decode_row(n,value)<<decode_col(n,value)<<": "<<decode_val(n,value)<<std::endl;
 			}
 		}
 	}
