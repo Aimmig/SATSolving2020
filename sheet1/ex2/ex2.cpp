@@ -21,10 +21,10 @@ private:
   int decode_col(int val);
   int decode_row(int val);
   int decode_val(int val);
-  int encode_block(int u, int j, int b, int i, int k,int s);
-  void addBlockClauses(int num, int k);
-  void addConflictingClauses(int k);
-  void addRules(int k);
+  int encode_block(int inner_row, int inner_col, int outer_row, int outer_col, int num);
+  void addBlockClauses(int num);
+  void addConflictingClauses();
+  void addRules();
   void assumeCell(int row, int col, int val);
   int betterFile(const char* filename);
 };
@@ -87,21 +87,21 @@ int SudokuSolver::decode_val(int val){
 /*
  *Encodes variables for a blocEncodes variables for a block
  */
-int SudokuSolver::encode_block(int u, int j, int b, int i, int k,int s){
-	return 1+u+(j)*n+b*k+n*n*(i)+s*n*k;
+int SudokuSolver::encode_block(int inner_row, int inner_col, int outer_row, int outer_col, int num){
+	return 1 + inner_row + inner_col*n + outer_row*k+n*n*(num) + outer_col*n*k;
 }
 
 /*
  *Add all variables that correspond to the sudoku block constraint
  *e.g in each k*k block there has to be each number
  */
-void SudokuSolver::addBlockClauses(int num, int k){
+void SudokuSolver::addBlockClauses(int num){
 	int var = 0;
-	for (int s=0;s<k;s++){
-		for (int b=0;b<k;b++){
-			for(int j=0; j<k;j++){
-				for (int u=0; u<k; u++){
-					var = encode_block(u,j,b,num,k,s);
+	for (int outer_col=0;outer_col<k;outer_col++){
+		for (int outer_row=0;outer_row<k;outer_row++){
+			for(int inner_col=0; inner_col<k;inner_col++){
+				for (int inner_row=0; inner_row<k; inner_row++){
+					var = encode_block(inner_row,inner_col,outer_row,outer_col,num);
 					//std::cout<<var<<" ";
 					ipasir_add(solver,var);
 				}
@@ -117,7 +117,7 @@ void SudokuSolver::addBlockClauses(int num, int k){
  *Add conflicting clauses to sovler
  *e.g. on each field there can only be one number
  */
-void SudokuSolver::addConflictingClauses(int k){
+void SudokuSolver::addConflictingClauses(){
 	int l1 = 0;
 	int l2 = 0;
 	for (int row=0; row<n; row++){
@@ -139,7 +139,7 @@ void SudokuSolver::addConflictingClauses(int k){
 /*
  *Add all the sudoku rules
  */
-void SudokuSolver::addRules(int k){
+void SudokuSolver::addRules(){
 	for (int i=0; i<n;i++){
 		for (int r=0; r<n; r++){
 			//clause for rows
@@ -161,10 +161,10 @@ void SudokuSolver::addRules(int k){
 		}
 		//std::cout<<"----"<<std::endl;
 		//clauess for blocks
-		addBlockClauses(i,k);
+		addBlockClauses(i);
 	}
 	//no 2 numbers on same field
-	addConflictingClauses(k);
+	addConflictingClauses();
 }
 
 /*
@@ -187,9 +187,10 @@ SudokuSolver::SudokuSolver(const char* filename){
 	int n = k*k;
 	int val = 0;
 	this->n = n;
+	this->k = k;
 	this->solver = ipasir_init();
 	
-	addRules(k);
+	addRules();
 	std::cout<<"c Solving Sudoku of size "<<k<<std::endl;
 	
 	for (int row =0; row<n; row++){
@@ -230,6 +231,7 @@ int main(int argc, char **argv) {
 	}
 	
 	SudokuSolver* s = new SudokuSolver(argv[1]);
+	std::cout<<"c Sudoku loaded from file "<<argv[1]<<std::endl;
 	int satRes = s->solve();
 
 	if (satRes == 20){
