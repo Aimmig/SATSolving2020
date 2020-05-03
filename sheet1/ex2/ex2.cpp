@@ -10,29 +10,45 @@ extern "C" {
 
 
 /*
- *
+ * Encodes that the cell at row,col has given val in sudoku
  */
 int encode(int n, int row, int col, int val){
 	return 1+n*(row)+col+(val)*n*n;
 }
 
+/*
+ * Get the column of a given literal
+ */
 int decode_col(int n, int val){
 	int res =val%n;
 	return res > 0 ? res : n;
 }
 
+/*
+ * Get the row of a given literal
+ */
 int decode_row(int n, int val){
 	return ((((val-1)%(n*n))-decode_col(n, val)+1)/n) + 1;
 }
 
+/*
+ * Get the sudoku value for a given literal
+ */
 int decode_val(int n, int val){
 	return 1+(((val-1)-decode_col(n,val)+1)/n)/n;
 }
 
+/*
+ *Encodes variables for a blocEncodes variables for a block
+ */
 int encode_block(int u, int j, int b, int i, int k,int n, int s){
 	return 1+u+(j)*n+b*k+n*n*(i)+s*n*k;
 }
 
+/*
+ *Add all variables that correspond to the sudoku block constraint
+ *e.g in each k*k block there has to be each number
+ */
 void addBlockClauses(void* solver, int num, int k){
 	int n =k*k;
 	int var = 0;
@@ -52,8 +68,11 @@ void addBlockClauses(void* solver, int num, int k){
 	std::cout<<"----"<<std::endl;
 }
 
+/*
+ *Add conflicting clauses to sovler
+ *e.g. on each field there can only be one number
+ */
 void addConflictingClauses(void* solver, int k){
-	//TO-DO
 	int n=k*k;
 	int l1 = 0;
 	int l2 = 0;
@@ -74,7 +93,7 @@ void addConflictingClauses(void* solver, int k){
 }
 
 /*
- *
+ *Add all the sudoku rules
  */
 void addRules(void* solver, int k){
 	int n=k*k;
@@ -98,13 +117,15 @@ void addRules(void* solver, int k){
 			std::cout<<std::endl;
 		}
 		std::cout<<"----"<<std::endl;
+		//clauess for blocks
 		addBlockClauses(solver, i,k);
 	}
+	//no 2 numbers on same field
 	addConflictingClauses(solver,k);
 }
 
 /*
- *
+ * Assume that at row,col the sudoku value is the given val
  */
 void assumeCell(void* solver, int n, int row, int col, int val){
 	int var = encode(n, row, col, val);
@@ -157,14 +178,6 @@ int main(int argc, char **argv) {
 	int k = betterFile(solver, argv[1]);
 	int n = k*k;
 	int maxVar = (int)std::pow(n,3);
-	
-	/*if (!loaded) {
-		std::cout << "c The input formula " << argv[1] << " could not be loaded." << std::endl;
-		return 0;
-	}
-	else {
-		std::cout << "c Loaded, solving" << std::endl;
-	}*/
 
 	std::cout<<"Now solving sudo"<<std::endl;
 	int satRes = ipasir_solve(solver);
@@ -177,13 +190,9 @@ int main(int argc, char **argv) {
 	if (satRes == 10) {
 		int value = 0;
 		std::cout<<"Solutin for sudoku found"<<std::endl;
-		//only request values for even variables (odd are activations literals)
 		for (int var = 1; var <= maxVar; var+=1) {
 			value = ipasir_val(solver, var);
 			if (value > 0){
-				//vertex = decode_vertex(value,numVertices);
-				//color = decode_col(value,numVertices);
-				//std::cout <<"v "<< vertex <<" "<< color<<std::endl;
 				std::cout <<" "<<decode_row(n,value)<<decode_col(n,value)<<": "<<decode_val(n,value)<<std::endl;
 			}
 		}
