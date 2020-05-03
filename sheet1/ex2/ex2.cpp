@@ -129,7 +129,6 @@ void addRules(void* solver, int k){
  */
 void assumeCell(void* solver, int n, int row, int col, int val){
 	int var = encode(n, row, col, val);
-	//std::cout<<var<<" ";
 	ipasir_assume(solver, var);
 }
 
@@ -146,7 +145,7 @@ int betterFile(void* solver, const char* filename){
 	int val = 0;
 	
 	addRules(solver,k);
-	std::cout<<"Solving sudok of size "<<k<<std::endl;
+	std::cout<<"c Solving Sudoku of size "<<k<<std::endl;
 	
 	for (int row =0; row<n; row++){
 		std::getline(infile,line);
@@ -170,32 +169,43 @@ int main(int argc, char **argv) {
 	std::cout << "c Using the incremental SAT solver " << ipasir_signature() << std::endl;
 
 	if (argc != 2) {
-		puts("c USAGE: ./example <file.sudo>");
+		std::cout<<"c USAGE: ./example <SSudoku-file>"<<std::endl;
 		return 0;
 	}
 
 	void *solver = ipasir_init();
+	
 	int k = betterFile(solver, argv[1]);
 	int n = k*k;
 	int maxVar = (int)std::pow(n,3);
-
-	std::cout<<"Now solving sudo"<<std::endl;
 	int satRes = ipasir_solve(solver);
 
 	
 	if (satRes == 20) {
-		std::cout<<"Invalid sudo, not solvable"<<std::endl;
+		std::cout<<"c Invalid Sudoku, not solvable"<<std::endl;
 	}
 	
 	if (satRes == 10) {
-		int value = 0;
-		std::cout<<"Solutin for sudoku found"<<std::endl;
+		int solution[n][n];
+		int value,col,row,res = 0;
+		std::cout<<"c Solution for Sudoku found"<<std::endl;
 		for (int var = 1; var <= maxVar; var+=1) {
 			value = ipasir_val(solver, var);
 			if (value > 0){
-				std::cout <<" "<<decode_row(n,value)<<decode_col(n,value)<<": "<<decode_val(n,value)<<std::endl;
+				row = decode_row(n,value)-1;
+				col = decode_col(n,value)-1;
+				res = decode_val(n,value);
+				solution[row][col] = res;
 			}
 		}
+		for (int row = 0; row < n ; row++){
+			std::cout<<"c ";
+			for (int col = 0; col < n ; col++){
+				std::cout<<solution[row][col]<<" ";
+			}
+			std::cout<<std::endl;
+		}
 	}
+	ipasir_release(solver);
 	return 0;
 }
