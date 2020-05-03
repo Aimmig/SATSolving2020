@@ -12,7 +12,27 @@ extern "C" {
  *
  */
 int encode(int n, int row, int col, int val){
-	return (1+n*(row-1)+(col-1))+(val-1)*n*n;
+	return (1+n*(row)+(col))+(val)*n*n;
+}
+
+int encode_block(int u, int j, int b, int i, int k,int n, int s){
+	return 1+u+(j)*n+b*k+n*n*(i)+s*n*k;
+}
+
+void addBlockClauses(void* solver, int num, int k){
+	int n =k*k;
+	for (int s=0;s<k;s++){
+		for (int b=0;b<k;b++){
+			for(int j=0; j<k;j++){
+				for (int u=0; u<k; u++){
+					std::cout<<encode_block(u,j,b,num,k,n,s)<<" ";
+					//std::cout<<1+u+(j)*n+b*k+n*n*(i)+s*n*k<<" ";
+				}
+			}
+			std::cout<<std::endl;
+		}
+	}
+	std::cout<<"----"<<std::endl;
 }
 
 /*
@@ -20,29 +40,20 @@ int encode(int n, int row, int col, int val){
  */
 void addRules(void* solver, int k){
 	int n=k*k;
-	//TO-DO anpassen für jede Zahl
-	//for (int i=1; i<=n;i++){
-		int i=1;
-		for (int r=1; r<=n; r++){
-			for (int c=1; c<=n; c++){
+	for (int i=0; i<n;i++){
+		for (int r=0; r<n; r++){
+			for (int c=0; c<n; c++){
 				std::cout<<encode(n,r,c,i)<<" ";
 			}
 			std::cout<<std::endl;
-			for (int c=1; c<=n; c++){
+			for (int c=0; c<n; c++){
 				std::cout<<encode(n,c,r,i)<<" ";
 			}
 			std::cout<<std::endl;
 		}
-		//TO-DO: add condition for each block
-		for (int b=0;b<k;b++){
-			for(int j=1; j<=k;j++){
-				for (int u=1; u<=k; u++){
-					std::cout<<u+(j-1)*n+b*k<<" ";
-				}
-			}
-			std::cout<<std::endl;
-		}
-	//}
+		std::cout<<"----"<<std::endl;
+		addBlockClauses(solver, i,k);
+	}
 }
 
 /*
