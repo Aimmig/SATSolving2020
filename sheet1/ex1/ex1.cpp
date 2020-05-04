@@ -9,35 +9,51 @@ extern "C" {
 
 class GraphColorer{
 public:
-  GraphColorer(void* solver, const char* filename, int numColors);
+  GraphColorer(const char* filename, int numColors);
   int solve();
+  int tryMoreColors();
+  void printSolution();
   std::vector<int> getSolution();
-  int numVertices;
+  int numVertices, color, minColor;
   std::vector<std::pair<int,int>> edgelist;
 //private:
   void* solver;
-  int getActivationLiteral(int vertex, int color, int numVertices);
-  int getNumVariables(int numVertices, int numColors);
-  int encode_pos(int color, int vertex, int numVertices);
-  int encode_neg(int color, int vertex, int numVertices);
-  void enforceColor(void* solver, int color, int numVertices);
-  int decode_vertex(int var, int numVertices);
-  int decode_col(int var, int numVertices);
-  void addClauses(void* solver, int numVertices, int numColors);
-  void addMoreVertexClauses(void* solver, int color, int numVertices, std::vector<std::pair<int,int>> edgeList);
-  void addConflictingClauses(void* solver, int numColors, int numVertices, std::vector<std::pair<int,int>> edgelist);
-  //std::vector<std::pair<int,int>> betterFile(void* solver, const char* filename, int numColors, int* outVariables);
-
+  int getActivationLiteral(int vertex, int color);
+  int getNumVariables();
+  int encode_pos(int color, int vertex);
+  int encode_neg(int color, int vertex);
+  void enforceColor(int color);
+  int decode_vertex(int var);
+  int decode_col(int var);
+  void addClauses(int numColors);
+  void addMoreVertexClauses(int color);
+  void addConflictingClauses(int numColors);
 };
 
 int GraphColorer::solve(){
+	enforceColor(color);
 	return ipasir_solve(solver);
+}
+
+int GraphColorer::tryMoreColors(){
+	addMoreVertexClauses(color);
+	color++;
+	addClauses(color);
+
+	for (int col = minColor; col <color; col++){
+		for (int v=0; v<numVertices;v++){
+			int activationLit = getActivationLiteral(v, col);
+			//std::cout<<"Setting Activation literal"<<activationLit<<std::endl;
+			ipasir_assume(solver,activationLit);
+		}
+	}
+	return this->solve();
 }
 
 /*
  * Encode an artifical activation literal
  */
-int GraphColorer::getActivationLiteral(int vertex, int color, int numVertices){
+int GraphColorer::getActivationLiteral(int vertex, int color){
 
 	return 2*(vertex)+1+2*numVertices*color;
 }
@@ -45,28 +61,28 @@ int GraphColorer::getActivationLiteral(int vertex, int color, int numVertices){
 /*
  * Maximum number of (acutal) variables
  */
-int GraphColorer::getNumVariables(int numVertices, int numColors){
-	return 2*numVertices*numColors;
+int GraphColorer::getNumVariables(){
+	return 2*numVertices*color;
 }
 
 /*
  * returns a variable coresponding to a color and vertex
  */
-int GraphColorer::encode_pos(int color, int vertex, int numVertices){
+int GraphColorer::encode_pos(int color, int vertex){
 	return 2*(1+vertex+color*numVertices);
 }
 
-int GraphColorer::encode_neg(int color, int vertex, int numVertices){
-	return -encode_pos(color,vertex,numVertices)+2;
+int GraphColorer::encode_neg(int color, int vertex){
+	return -encode_pos(color,vertex)+2;
 }
 
 /*
  * Enforces the number of colors by setting all activation literals acordingly
  */
-void GraphColorer::enforceColor(void* solver, int color, int numVertices){
+void GraphColorer::enforceColor(int color){
 	int activationLit = 0;
 	for (int v=0; v<numVertices;v++){
-		activationLit = getActivationLiteral(v, color,numVertices);
+		activationLit = getActivationLiteral(v, color);
 		//std::cout<<"Setting Activation literal -"<<activationLit<<std::endl;	
 		ipasir_assume(solver,-activationLit);
 	}
@@ -75,15 +91,15 @@ void GraphColorer::enforceColor(void* solver, int color, int numVertices){
 /*
  * Decodes a variable into the vertex number
  */
-int GraphColorer::decode_vertex(int var, int numVertices){
+int GraphColorer::decode_vertex(int var){
 	return 1+((var/2)-1)%numVertices;
 }
 
 /*
  * Decodes a variable into the corresponding color
  */
-int GraphColorer::decode_col(int var, int numVertices){
-	return 1+((var/2)-decode_vertex(var,numVertices))/numVertices;
+int GraphColorer::decode_col(int var){
+	return 1+((var/2)-decode_vertex(var))/numVertices;
 }
 
 /*
@@ -91,17 +107,17 @@ int GraphColorer::decode_col(int var, int numVertices){
  * u_1,u_2,...,u_c,u_a for each vertex u
  * where u_a is an additional activation literal
  */
-void GraphColorer::addClauses(void* solver, int numVertices, int numColors){
+void GraphColorer::addClauses(int numColors){
 	int var = 0;
 	int activationLit = 0;
 	for (int v=0; v<numVertices;v++){
 		//std::cout<<"c ";
 		for (int col=0; col<numColors; col++){
-			var = encode_pos(col,v,numVertices);
+			var = encode_pos(col,v);
 			ipasir_add(solver,var);
 			//std::cout<< var << " ";
 		}
-		activationLit = getActivationLiteral(v,numColors,numVertices);
+		activationLit = getActivationLiteral(v,numColors);
 		ipasir_add(solver,activationLit);
 		//std::cout<<activationLit;
 		//std::cout << std::endl;
@@ -115,12 +131,12 @@ void GraphColorer::addClauses(void* solver, int numVertices, int numColors){
  * Add Clause such for e=(u,v) u & v have different colors:
  * -u_c,-v_c
  */
-void GraphColorer::addMoreVertexClauses(void* solver, int color, int numVertices, std::vector<std::pair<int,int>> edgeList){
-	for (auto e : edgeList){
-		int var1 = encode_neg(color,e.first,numVertices);
+void GraphColorer::addMoreVertexClauses(int color){
+	for (auto e : edgelist){
+		int var1 = encode_neg(color,e.first);
 		ipasir_add(solver,var1);
 		//std::cout<<"c "<<var1<< " ";
-		int var2 = encode_neg(color,e.second,numVertices);
+		int var2 = encode_neg(color,e.second);
 		ipasir_add(solver,var2);
 		//std::cout<<var2<< " ";
 		ipasir_add(solver,0);
@@ -131,9 +147,9 @@ void GraphColorer::addMoreVertexClauses(void* solver, int color, int numVertices
 /*
  * Add all the conflicting clauses for all edges
  */
-void GraphColorer::addConflictingClauses(void* solver, int numColors, int numVertices, std::vector<std::pair<int,int>> edgelist){
+void GraphColorer::addConflictingClauses(int numColors){
 	for (int k=0; k<numColors; k++){
-		addMoreVertexClauses(solver,k,numVertices,edgelist);
+		addMoreVertexClauses(k);
 	}
 	//std::cout<<"c------"<<std::endl;
 }
@@ -142,10 +158,14 @@ void GraphColorer::addConflictingClauses(void* solver, int numColors, int numVer
  * Read the graph from file & encode the coloring problem
  * returns vector with all edges
  */
-GraphColorer::GraphColorer(void* solver, const char* filename, int numColors){
+GraphColorer::GraphColorer(const char* filename, int numColors){
+	void *solver = ipasir_init();
+
 	std::ifstream infile(filename);
 	std::string line;
 	this->solver = solver;
+	this->color = numColors;
+	this->minColor = numColors;
 	while(std::getline(infile,line)){
 		std::vector<std::string> splitted;
 		std::istringstream iss(line);
@@ -167,12 +187,29 @@ GraphColorer::GraphColorer(void* solver, const char* filename, int numColors){
 		}
 		splitted.clear();
 	}
-	addConflictingClauses(solver, numColors, numVertices, edgelist);
-	addClauses(solver,numVertices, numColors);
+	addConflictingClauses(numColors);
+	addClauses(numColors);
 	//std::cout<<"c Graph has " << numVertices<<" vertices"<<std::endl;
 	//std::cout<<"c Graph has " << numEdges <<" edes"<<std::endl;
-	//*outVariables = numVertices;
-	//return res;
+}
+
+void GraphColorer::printSolution(){
+	std::cout << "c The graph is colorable with " <<this->color<<" colors"<< std::endl;
+	std::cout << "c The output format is: <node> <color>"<< std::endl;
+	int vertex = 0;
+	int color = 0;
+	int variables = this->getNumVariables();
+	int value = 0;
+	
+	//only request values for even variables (odd are activations literals)
+	for (int var = 2; var <= variables; var+=2) {
+		value = ipasir_val(this->solver, var);
+		if (value > 0){
+			vertex = this->decode_vertex(value);
+			color = this->decode_col(value);
+			std::cout <<"v "<< vertex <<" "<< color<<std::endl;
+		}
+	}
 }
 
 int main(int argc, char **argv) {
@@ -183,57 +220,21 @@ int main(int argc, char **argv) {
 		return 0;
 	}
 
-	void *solver = ipasir_init();
 	int minColor = atoi(argv[2]);
-	int colors = minColor;
-	//int numVertices = 0;
 	
-	GraphColorer* g = new GraphColorer(solver, argv[1], minColor);
-	//std::cout<<"c Trying to color graph with "<< colors <<" Colors"<<std::endl;
-	//std::vector<std::pair<int,int>> edgelist = betterFile(solver, argv[1], colors, &numVertices);
-	
-	g->enforceColor(solver,colors,g->numVertices);
+	GraphColorer* g = new GraphColorer(argv[1], minColor);
 	
 	int satRes = g->solve();
 	
-	std::cout<<satRes<<" ";
 	while (satRes == 20) {
 		//std::cout<<"c--------"<<std::endl;
-		std::cout<<"c The graph is not colorable with "<<colors<<" colors" << std::endl;
-		std::cout<<"c Now trying with "<<colors+1<<" colors"<<std::endl;
+		std::cout<<"c The graph is not colorable with "<<g->color<<" colors" << std::endl;
+		std::cout<<"c Now trying with "<<g->color+1<<" colors"<<std::endl;
 		//std::cout<<"c--------"<<std::endl;
-		g->addMoreVertexClauses(solver, colors, g->numVertices, g->edgelist);
-		colors++;
-		g->addClauses(solver,g->numVertices,colors);
-
-		for (int col = minColor; col <colors; col++){
-			for (int v=0; v<g->numVertices;v++){
-				int activationLit = g->getActivationLiteral(v, col, g->numVertices);
-				//std::cout<<"Setting Activation literal"<<activationLit<<std::endl;
-				ipasir_assume(solver,activationLit);
-			}
-		}
-		g->enforceColor(solver,colors,g->numVertices);
-		satRes = ipasir_solve(solver);
-	}
-	
+		satRes = g->tryMoreColors();
+	}	
 	if (satRes == 10) {
-		std::cout << "c The graph is colorable with " <<colors<<" colors"<< std::endl;
-		std::cout << "c The output format is: <node> <color>"<< std::endl;
-		int vertex = 0;
-		int color = 0;
-		int variables = g->getNumVariables(g->numVertices,colors);
-		int value = 0;
-		
-		//only request values for even variables (odd are activations literals)
-		for (int var = 2; var <= variables; var+=2) {
-			value = ipasir_val(solver, var);
-			if (value > 0){
-				vertex = g->decode_vertex(value,g->numVertices);
-				color = g->decode_col(value,g->numVertices);
-				std::cout <<"v "<< vertex <<" "<< color<<std::endl;
-			}
-		}
+		g->printSolution();
 	}
 	return 0;
 }
