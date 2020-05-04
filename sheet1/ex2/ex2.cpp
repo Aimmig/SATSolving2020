@@ -13,18 +13,23 @@ class SudokuSolver{
 public:
   SudokuSolver(const char* filename);
   int solve();
-  std::vector<int> getSolution();
-  int n,k;
+  void printSolution();
+  void getSolution();
+  int n,k,maxVar;
+  std::vector<int> solution;
 private:
   void* solver;
   int encode(int row, int col, int val);
   int decode_col(int val);
   int decode_row(int val);
   int decode_val(int val);
+  int getAdditionalVar(int i, int j);
   int encode_block(int inner_row, int inner_col, int outer_row, int outer_col, int num);
   void addBlockClauses(int num);
   void addConflictingClauses();
   void addRules();
+  void sequentialAMO(std::vector<int> vars, int offset);
+  void atMostOneEncoding(std::vector<int> vars);
   void assumeCell(int row, int col, int val);
   int betterFile(const char* filename);
 };
@@ -33,26 +38,24 @@ int SudokuSolver::solve(){
 	return ipasir_solve(solver);
 }
 
-std::vector<int> SudokuSolver::getSolution(){
-	std::vector<int> solution(n*n,0); 
+void SudokuSolver::getSolution(){
+	std::vector<int> solution(n*n,-1); 
 
-	//std::vector<int> solution;
 	int value,col,row,res = 0;
-	int maxVar = (int)pow(n,3);
 	
 	for (int var = 1; var <= maxVar; var+=1) {
-		//solution.push_back(0);
 		value = ipasir_val(solver, var);
-		//std::cout<<value<<std::endl;
 		if (value > 0){
+			//std::cout<<value<<std::endl;
 			row = decode_row(value)-1;
 			col = decode_col(value)-1;
 			res = decode_val(value);
-			//solution[row][col] = res;
+			//std::cout<<"["<<row<<","<<col<<"]="<<value<<std::endl;
 			solution[row+n*col] = res;
+			//std::cout<<solution[row+n*col]<<" ";
 		}
 	}
-	return solution;
+	this->solution = solution;
 }
 
 /*
@@ -92,34 +95,14 @@ int SudokuSolver::encode_block(int inner_row, int inner_col, int outer_row, int 
 }
 
 /*
- *Add all variables that correspond to the sudoku block constraint
- *e.g in each k*k block there has to be each number
- */
-void SudokuSolver::addBlockClauses(int num){
-	int var = 0;
-	for (int outer_col=0;outer_col<k;outer_col++){
-		for (int outer_row=0;outer_row<k;outer_row++){
-			for(int inner_col=0; inner_col<k;inner_col++){
-				for (int inner_row=0; inner_row<k; inner_row++){
-					var = encode_block(inner_row,inner_col,outer_row,outer_col,num);
-					//std::cout<<var<<" ";
-					ipasir_add(solver,var);
-				}
-			}
-			ipasir_add(solver,0);
-			//std::cout<<std::endl;
-		}
-	}
-	//std::cout<<"----"<<std::endl;
-}
-
-/*
- *Add conflicting clauses to sovler
+ * CARDINALITY CONSTRAINT
+ * *Add conflicting clauses to sovler
  *e.g. on each field there can only be one number
  */
 void SudokuSolver::addConflictingClauses(){
 	int l1 = 0;
 	int l2 = 0;
+	/*
 	for (int row=0; row<n; row++){
 		for (int col=0; col<n; col++){
 			for (int n1=0; n1<n; n1++){
@@ -133,7 +116,53 @@ void SudokuSolver::addConflictingClauses(){
 				}
 			}
 		}
+	}*/
+	for (int row=0; row<n; row++){
+		for (int col=0; col<n; col++){
+			std::vector<int> conflicting;
+			int var;
+			for (int offset=0; offset<n; offset++){
+				var = encode(row,col,offset);
+				//std::cout<<var<<" ";
+				conflicting.push_back(var);
+			}
+			//std::cout<<std::endl;
+			sequentialAMO(conflicting,row+n*col);
+		}
 	}
+
+}
+
+int SudokuSolver::getAdditionalVar(int i,int j){
+	return maxVar+i+(n-1)*j;
+}
+
+void SudokuSolver::sequentialAMO(std::vector<int> set, int offset){
+
+	//std::cout<<-set[0]<<" "<<getAdditionalVar(1,offset)<<std::endl;
+	ipasir_add(solver,-set[0]);
+	ipasir_add(solver, getAdditionalVar(1,offset));
+	ipasir_add(solver,0);
+	
+	for (int i=1; i< n-1;i++){
+		ipasir_add(solver, -set[i]);
+		ipasir_add(solver, getAdditionalVar(i+1,offset));
+		ipasir_add(solver,0);
+		
+		ipasir_add(solver,-getAdditionalVar(i,offset));	
+		ipasir_add(solver, getAdditionalVar(i+1,offset));
+		ipasir_add(solver,0);
+		
+		ipasir_add(solver, -set[i]);
+		ipasir_add(solver, -getAdditionalVar(i,offset));
+		ipasir_add(solver,0);
+	}
+	//std::cout<<std::endl;
+	//std::cout<<-set[n-1]<<" "<<getAdditionalVar(n-1,offset)<<std::endl;
+	ipasir_add(solver,-set[n-1]);
+	ipasir_add(solver, -getAdditionalVar(n-1,offset));
+	ipasir_add(solver,0);
+
 }
 
 /*
@@ -142,27 +171,40 @@ void SudokuSolver::addConflictingClauses(){
 void SudokuSolver::addRules(){
 	for (int i=0; i<n;i++){
 		for (int r=0; r<n; r++){
-			//clause for rows
 			for (int c=0; c<n; c++){
 				int var = encode(r,c,i);
-				//std::cout<<var<<" ";
 				ipasir_add(solver,var);
 			}
 			ipasir_add(solver,0);
 			//std::cout<<std::endl;
+			///std::cout<<"----"<<std::endl;
 			//clauses for colums
 			for (int c=0; c<n; c++){
 				int var = encode(c,r,i);
-				//std::cout<<var<<" ";
 				ipasir_add(solver,var);
 			}
 			ipasir_add(solver,0);
-			//std::cout<<std::endl;
 		}
-		//std::cout<<"----"<<std::endl;
-		//clauess for blocks
-		addBlockClauses(i);
+	       	for (int outer_col=0;outer_col<k;outer_col++){
+        	       	for (int outer_row=0;outer_row<k;outer_row++){
+				int var = 0;
+				for(int inner_col=0; inner_col<k;inner_col++){
+                        	       	for (int inner_row=0; inner_row<k; inner_row++){
+                                	       	var = encode_block(inner_row,inner_col,outer_row,outer_col,i);
+                                       		//std::cout<<var<<" ";
+                                       		ipasir_add(solver,var);
+                               		}
+                       		}
+                       		ipasir_add(solver,0);
+                       		//std::cout<<std::endl;
+				//std::cout<<"----"<<std::endl;
+               		}
+       		}
+
+		
 	}
+
+	//TO-DO insert cardinality constraint optimization here
 	//no 2 numbers on same field
 	addConflictingClauses();
 }
@@ -188,6 +230,7 @@ SudokuSolver::SudokuSolver(const char* filename){
 	int val = 0;
 	this->n = n;
 	this->k = k;
+	this->maxVar = (int)pow(n,3);
 	this->solver = ipasir_init();
 	
 	addRules();
@@ -202,7 +245,7 @@ SudokuSolver::SudokuSolver(const char* filename){
 			val = std::stoi(part);
 			if (val){
 				val--;
-				//std::cout<<"Assuming cell"<<"at "<<row+1<<" "<<col+1<<"with "<<val+1<<std::endl;
+				std::cout<<"Assuming cell"<<"at "<<row+1<<" "<<col+1<<"with "<<val+1<<std::endl;
 				assumeCell(row, col, val);
 			}
 		}
@@ -211,11 +254,11 @@ SudokuSolver::SudokuSolver(const char* filename){
 }
 
 
-void printSolution(int n, std::vector<int> s){
+void SudokuSolver::printSolution(){
 	for (int row = 0; row < n ; row++){
 		//std::cout<<"c ";
 		for (int col = 0; col < n ; col++){
-			std::cout<<s[row+n*col]<<" ";
+			std::cout<<solution[row+n*col]<<" ";
 		}
 		std::cout<<std::endl;
 	}
@@ -233,14 +276,13 @@ int main(int argc, char **argv) {
 	SudokuSolver* s = new SudokuSolver(argv[1]);
 	std::cout<<"c Sudoku loaded from file "<<argv[1]<<std::endl;
 	int satRes = s->solve();
-
 	if (satRes == 20){
 		std::cout<<"c Invalid Sudoku, not solvable"<<std::endl;
 	}
 	if (satRes == 10){
 		std::cout<<"c Solution for Sudoku found"<<std::endl;
-		auto solution = s->getSolution();
-	 	printSolution(s->n,solution);	
+		s->getSolution();
+	 	s->printSolution();	
 	}
 	return 0;
 
