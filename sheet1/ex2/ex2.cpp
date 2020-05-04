@@ -100,23 +100,6 @@ int SudokuSolver::encode_block(int inner_row, int inner_col, int outer_row, int 
  *e.g. on each field there can only be one number
  */
 void SudokuSolver::addConflictingClauses(){
-	int l1 = 0;
-	int l2 = 0;
-	/*
-	for (int row=0; row<n; row++){
-		for (int col=0; col<n; col++){
-			for (int n1=0; n1<n; n1++){
-				for (int n2=0; n2<n1; n2++){
-					l1 = -encode(row,col,n1);
-					l2 = -encode(row,col,n2);
-					//std::cout<<l1<<" "<<l2<<std::endl;
-					ipasir_add(solver,l1);
-					ipasir_add(solver,l2);
-					ipasir_add(solver,0);
-				}
-			}
-		}
-	}*/
 	for (int row=0; row<n; row++){
 		for (int col=0; col<n; col++){
 			std::vector<int> conflicting;
@@ -245,7 +228,7 @@ SudokuSolver::SudokuSolver(const char* filename){
 			val = std::stoi(part);
 			if (val){
 				val--;
-				std::cout<<"Assuming cell"<<"at "<<row+1<<" "<<col+1<<"with "<<val+1<<std::endl;
+				//std::cout<<"Assuming cell"<<"at "<<row+1<<" "<<col+1<<"with "<<val+1<<std::endl;
 				assumeCell(row, col, val);
 			}
 		}
