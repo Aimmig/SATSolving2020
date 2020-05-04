@@ -89,7 +89,6 @@ int main(int argc, char **argv) {
 	int k = atoi(argv[2]);
 	loadFormula(solver, n, k, params);
 
-	//ipasir_assume(solver,1);
 	int satRes = ipasir_solve(solver);
 	
 	std::cout << "c Number of variables: " << params[0] << std::endl;
