@@ -11,7 +11,7 @@ extern "C" {
 class SudokuSolver{
 
 public:
-  SudokuSolver(const char* filename);
+  SudokuSolver(std::ifstream& infile);
   int solve();
   void printSolution();
   void getSolution();
@@ -31,7 +31,6 @@ private:
   void sequentialAMO(std::vector<int> vars, int offset);
   void atMostOneEncoding(std::vector<int> vars);
   void assumeCell(int row, int col, int val);
-  int betterFile(const char* filename);
 };
 
 int SudokuSolver::solve(){
@@ -204,8 +203,7 @@ void SudokuSolver::assumeCell(int row, int col, int val){
  * Read the graph from file & encode the coloring problem
  * returns vector with all edges
  */
-SudokuSolver::SudokuSolver(const char* filename){
-	std::ifstream infile(filename);
+SudokuSolver::SudokuSolver(std::ifstream& infile){
 	std::string line;
 	std::getline(infile,line);
 	int k = std::stoi(line);
@@ -252,11 +250,15 @@ int main(int argc, char **argv) {
 	std::cout << "c Using the incremental SAT solver " << ipasir_signature() << std::endl;
 
 	if (argc != 2) {
-		std::cout<<"c USAGE: ./example <SSudoku-file>"<<std::endl;
+		std::cout<<"c USAGE: ./ex2 <Sudoku-file>"<<std::endl;
 		return 0;
 	}
-	
-	SudokuSolver* s = new SudokuSolver(argv[1]);
+	std::ifstream infile(argv[1]);
+	if (!infile.is_open()){
+		std::cout<<"Error while opening file "<<argv[1]<<std::endl;
+		return -1;
+	}
+	SudokuSolver* s = new SudokuSolver(infile);
 	std::cout<<"c Sudoku loaded from file "<<argv[1]<<std::endl;
 	int satRes = s->solve();
 	if (satRes == 20){
