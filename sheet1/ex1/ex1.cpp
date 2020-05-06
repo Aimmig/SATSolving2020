@@ -18,6 +18,8 @@ public:
   std::vector<std::pair<int,int>> edgelist;
 //private:
   void* solver;
+  //int getAdditionalVar(int i,int j);
+  void sequentialAMO(std::vector<int> set, int offset);
   int getActivationLiteral(int vertex, int color);
   int getNumVariables();
   int encode_pos(int color, int vertex);
@@ -66,6 +68,11 @@ int GraphColorer::getNumVariables(){
 }
 
 /*
+int GraphColorer::getAdditionalVar(int i,int j){
+	return getNumVariables()+i+j;
+}*/
+
+/*
  * returns a variable coresponding to a color and vertex
  */
 int GraphColorer::encode_pos(int color, int vertex){
@@ -75,6 +82,53 @@ int GraphColorer::encode_pos(int color, int vertex){
 int GraphColorer::encode_neg(int color, int vertex){
 	return -encode_pos(color,vertex)+2;
 }
+
+void GraphColorer::sequentialAMO(std::vector<int> set, int activationLit){
+	for (int i=0; i<set.size(); i++){
+		for (int j=0; j<i; j++){
+			ipasir_add(solver,-set[i]);
+			ipasir_add(solver,-set[j]);
+			ipasir_add(solver,activationLit);
+			//std::cout<<-set[i]<<" "<<-set[j]<<std::endl;
+			ipasir_add(solver,0);
+		}
+	}
+
+	//std::cout<<-set[0]<<" "<<getAdditionalVar(1,offset)<<std::endl;
+        /*	
+	int bla = 1000000;
+	int offset = activationLit;
+	ipasir_add(solver,-set[0]);
+	std::cout<<getAdditionalVar(1,bla)<<std::endl;
+	ipasir_add(solver, getAdditionalVar(1,bla));
+	ipasir_add(solver,offset);	
+	ipasir_add(solver,0);
+	int n = set.size();
+	for (int i=1; i< n-1;i++){
+		ipasir_add(solver, -set[i]);
+		ipasir_add(solver, getAdditionalVar(i+1,bla));
+		ipasir_add(solver,offset);
+		ipasir_add(solver,0);
+
+		ipasir_add(solver,-getAdditionalVar(i,bla));
+		ipasir_add(solver, getAdditionalVar(i+1,bla));
+		ipasir_add(solver,offset);
+		ipasir_add(solver,0);
+
+		ipasir_add(solver, -set[i]);
+		ipasir_add(solver, -getAdditionalVar(i,bla));
+		ipasir_add(solver,offset);
+		ipasir_add(solver,0);
+	}
+	//std::cout<<std::endl;
+	//std::cout<<-set[n-1]<<" "<<getAdditionalVar(n-1,offset)<<std::endl;
+	ipasir_add(solver,-set[n-1]);
+	ipasir_add(solver, -getAdditionalVar(n-1,bla));
+	ipasir_add(solver,offset);
+	ipasir_add(solver,0);
+	*/
+}
+
 
 /*
  * Enforces the number of colors by setting all activation literals acordingly
@@ -111,17 +165,20 @@ void GraphColorer::addClauses(int numColors){
 	int var = 0;
 	int activationLit = 0;
 	for (int v=0; v<numVertices;v++){
+		std::vector<int> set;
 		//std::cout<<"c ";
 		for (int col=0; col<numColors; col++){
 			var = encode_pos(col,v);
 			ipasir_add(solver,var);
+			set.push_back(var);
 			//std::cout<< var << " ";
 		}
 		activationLit = getActivationLiteral(v,numColors);
 		ipasir_add(solver,activationLit);
-		//std::cout<<activationLit;
-		//std::cout << std::endl;
 		ipasir_add(solver,0);
+		//std::cout << std::endl;
+		sequentialAMO(set,activationLit);
+		//std::cout<<activationLit;
 		
 	}
 	//std::cout<<"c--------"<<std::endl;
@@ -138,9 +195,8 @@ void GraphColorer::addMoreVertexClauses(int color){
 		//std::cout<<"c "<<var1<< " ";
 		int var2 = encode_neg(color,e.second);
 		ipasir_add(solver,var2);
-		//std::cout<<var2<< " ";
+		//std::cout<<var1<<" "<<var2<<std::endl;
 		ipasir_add(solver,0);
-		//std::cout<<std::endl;
 	}
 }
 
@@ -200,15 +256,20 @@ void GraphColorer::printSolution(){
 	int color = 0;
 	int variables = this->getNumVariables();
 	int value = 0;
-	
+
+	std::vector<int> solution(numVertices,0);
 	//only request values for even variables (odd are activations literals)
 	for (int var = 2; var <= variables; var+=2) {
 		value = ipasir_val(this->solver, var);
-		if (value > 0){
+		if (value >= 0){
 			vertex = this->decode_vertex(value);
 			color = this->decode_col(value);
-			std::cout <<"v "<< vertex <<" "<< color<<std::endl;
+			solution[vertex-1] = color;
+			//std::cout <<""<< vertex <<" "<< color<<std::endl;
 		}
+	}
+	for (int i=0; i<numVertices; i++){
+		std::cout<<solution[i]<<std::endl;
 	}
 }
 
