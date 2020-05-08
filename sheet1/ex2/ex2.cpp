@@ -13,11 +13,10 @@ class SudokuSolver{
 public:
   SudokuSolver(std::ifstream& infile);
   int solve();
-  void printSolution();
-  void getSolution();
-  int n,k,maxVar;
+  std::pair<std::vector<int>,int> getSolution();
   std::vector<int> solution;
 private:
+  int n,k,maxVar;
   void* solver;
   int encode(int row, int col, int val);
   int decode_col(int val);
@@ -37,8 +36,8 @@ int SudokuSolver::solve(){
 	return ipasir_solve(solver);
 }
 
-void SudokuSolver::getSolution(){
-	std::vector<int> solution(n*n,-1); 
+std::pair<std::vector<int>,int> SudokuSolver::getSolution(){
+	std::vector<int> result(n*n,-1);
 
 	int value,col,row,res = 0;
 	
@@ -50,11 +49,11 @@ void SudokuSolver::getSolution(){
 			col = decode_col(value)-1;
 			res = decode_val(value);
 			//std::cout<<"["<<row<<","<<col<<"]="<<value<<std::endl;
-			solution[row+n*col] = res;
+			result[row+n*col] = res;
 			//std::cout<<solution[row+n*col]<<" ";
 		}
 	}
-	this->solution = solution;
+	return std::pair(result,n);
 }
 
 /*
@@ -182,11 +181,8 @@ void SudokuSolver::addRules(){
 				//std::cout<<"----"<<std::endl;
                		}
        		}
-
-		
 	}
 
-	//TO-DO insert cardinality constraint optimization here
 	//no 2 numbers on same field
 	addConflictingClauses();
 }
@@ -235,7 +231,7 @@ SudokuSolver::SudokuSolver(std::ifstream& infile){
 }
 
 
-void SudokuSolver::printSolution(){
+void printSolution(std::vector<int> solution, int n){
 	for (int row = 0; row < n ; row++){
 		//std::cout<<"c ";
 		for (int col = 0; col < n ; col++){
@@ -266,8 +262,8 @@ int main(int argc, char **argv) {
 	}
 	if (satRes == 10){
 		std::cout<<"c Solution for Sudoku found"<<std::endl;
-		s->getSolution();
-	 	s->printSolution();	
+		auto result = s->getSolution();
+		printSolution(result.first, result.second);	
 	}
 	return 0;
 
