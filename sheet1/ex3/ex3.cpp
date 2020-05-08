@@ -24,9 +24,6 @@ extern "C" {
 }
 
 #include <iostream>
-#include <stdlib.h>
-#include <stdio.h>
-#include <ctype.h>
 #include <vector>
 
 /* The upper for equally spacing k from n */
@@ -100,11 +97,12 @@ int main(int argc, char **argv) {
 	}
 	
 	else if (satRes == 10) {
-		std::cout << "c The input formula is satisfiable" << std::endl;
+		std::cout << "c The input formula is satisfiable e.g:" << std::endl;
 		std::cout << "v ";
 		for (int var = 1; var <= params[0]; var++) {
-			int value = ipasir_val(solver, var);
-			std::cout << value << " ";
+			int variable_val = ipasir_val(solver, var);
+			int val = variable_val >= 1 ? 1 : 0;
+			std::cout<<val<< " ";
 		}
 		std::cout << std::endl;
 		std::cout << "c This means W(2," << k << ") > " << n << " is true" << std::endl;
