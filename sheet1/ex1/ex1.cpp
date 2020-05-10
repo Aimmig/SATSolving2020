@@ -14,12 +14,13 @@ public:
   int tryMoreColors();
   void printSolution();
   std::vector<int> getSolution();
-  int numVertices, color, minColor;
+  int color;
+private:
+  int numVertices, minColor;
   std::vector<std::pair<int,int>> edgelist;
-//private:
   void* solver;
   //int getAdditionalVar(int i,int j);
-  void sequentialAMO(std::vector<int> set, int offset);
+  //void sequentialAMO(std::vector<int> set, int offset);
   int getActivationLiteral(int vertex, int color);
   int getNumVariables();
   int encode_pos(int color, int vertex);
@@ -83,9 +84,15 @@ int GraphColorer::encode_neg(int color, int vertex){
 	return -encode_pos(color,vertex)+2;
 }
 
+/*
+ * The at most one constraint for the colors per vertex isn't
+ * actually needed to solve the problem. Multiple colors per vertex
+ * are actually ok, as long as they dont conflict.
+ * This allows to decrease the number of clauses
+ *
 void GraphColorer::sequentialAMO(std::vector<int> set, int activationLit){
-	for (int i=0; i<set.size(); i++){
-		for (int j=0; j<i; j++){
+	for (uint i=0; i<set.size(); i++){
+		for (uint j=0; j<i; j++){
 			ipasir_add(solver,-set[i]);
 			ipasir_add(solver,-set[j]);
 			ipasir_add(solver,activationLit);
@@ -95,7 +102,8 @@ void GraphColorer::sequentialAMO(std::vector<int> set, int activationLit){
 	}
 
 	//std::cout<<-set[0]<<" "<<getAdditionalVar(1,offset)<<std::endl;
-        /*	
+        
+
 	int bla = 1000000;
 	int offset = activationLit;
 	ipasir_add(solver,-set[0]);
@@ -126,8 +134,7 @@ void GraphColorer::sequentialAMO(std::vector<int> set, int activationLit){
 	ipasir_add(solver, -getAdditionalVar(n-1,bla));
 	ipasir_add(solver,offset);
 	ipasir_add(solver,0);
-	*/
-}
+}*/
 
 
 /*
@@ -177,7 +184,7 @@ void GraphColorer::addClauses(int numColors){
 		ipasir_add(solver,activationLit);
 		ipasir_add(solver,0);
 		//std::cout << std::endl;
-		sequentialAMO(set,activationLit);
+		//sequentialAMO(set,activationLit);
 		//std::cout<<activationLit;
 		
 	}
@@ -251,7 +258,8 @@ GraphColorer::GraphColorer(const char* filename, int numColors){
 
 void GraphColorer::printSolution(){
 	std::cout << "c The graph is colorable with " <<this->color<<" colors"<< std::endl;
-	std::cout << "c The output format is: <node> <color>"<< std::endl;
+	std::cout << "c The following is a valid coloring, where each line contains the color of the corresponding vertices"<< std::endl;
+	std::cout << "c The colors of vertices are printed from 1 up to n"<<std::endl;
 	int vertex = 0;
 	int color = 0;
 	int variables = this->getNumVariables();
@@ -265,10 +273,10 @@ void GraphColorer::printSolution(){
 			vertex = this->decode_vertex(value);
 			color = this->decode_col(value);
 			solution[vertex-1] = color;
-			//std::cout <<""<< vertex <<" "<< color<<std::endl;
 		}
 	}
 	for (int i=0; i<numVertices; i++){
+		//std::cout<<i+1<<" "<<solution[i]<<std::endl;
 		std::cout<<solution[i]<<std::endl;
 	}
 }

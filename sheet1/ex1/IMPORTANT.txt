@@ -1,0 +1,3 @@
+My incremental solution does not seem to work with the recent git version of candy.
+Please use with previous git version (e.g. commit 2313d0ee2b3... or earlier).
+Also the comment in the ILIAS-Forum
