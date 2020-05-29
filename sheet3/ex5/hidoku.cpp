@@ -28,25 +28,24 @@ int decodeRow(int var, int sizes){
 }
 
 int decodeVal(int var, int sizes){
-    return (var-1) - decodeCol(var,sizes);//-(sizes)*decodeRow(var,sizes);
+    return 1+ (((var-1 - decodeCol(var,sizes))/sizes) - decodeRow(var,sizes))/sizes;
 }
 
 int getNumVars(){
     return maxVar + width*height*(width*height-1);
 }
 
-
 int getNumClauses(){
-   return num_units + width*height*(1+2+3*(width*height-2))+width*height*(width*height-1);
+   return num_units + width*height*(1+1+2+3*(width*height-2))+width*height*(width*height-1);
 }
 
 //get all neighbours indexes for row,col
 std::vector<tuple<int,int>> getNeighbours(int row, int col){
    int startW = (col - 1 < 0) ? col : col-1;
    int startH = (row - 1 < 0) ? row : row-1;
-   int endW   = (col + 1 > width) ? col : col+1;
-   int endH   = (row + 1 > height) ? row : row+1;
-
+   int endW   = (col + 1 >= width) ? col : col+1;
+   int endH   = (row + 1 >= height) ? row : row+1;
+   
    vector<tuple<int,int>> neighbours;
    // See how many are alive
    for (int rowNum=startH; rowNum<=endH; rowNum++) {
@@ -57,6 +56,7 @@ std::vector<tuple<int,int>> getNeighbours(int row, int col){
            neighbours.push_back(tuple<int,int>(rowNum,colNum));
        }
    }
+   //printf("------\n");
    return neighbours;
 }
 
@@ -99,6 +99,7 @@ void encodeRules(){
               set[val-1] = encode(i,j,val);
            }
            sequentialAMO(set);
+           //printf("%d--- %d\n",i,j);
            auto ne = getNeighbours(i,j);
            int row, col;
            for (int val=1; val<width*height;val++){
@@ -115,9 +116,15 @@ void encodeRules(){
            }
        }
     }
+    for (int val=1;val<=width*height;val++){
+       for (int i=0; i< height; i++){
+            for (int j=0; j< width; j++){
+                printf("%d ", encode(i,j,val));
+            }
+        }
+        printf("0\n");
+    }
 }
-
-
 
 vector<string> split (const string &s, char delim) {
     vector<string> result;
@@ -145,7 +152,7 @@ void decode(char* filename, int size){
                  row = decodeRow(var,size);
                  col = decodeCol(var,size);
                  val = decodeVal(var,size);
-                 printf("%d %d %d\n", row, col, val);
+                 printf("%d: %d %d %d\n", var, row, col, val);
              }
          }
      }
@@ -185,7 +192,7 @@ bool loadSatProblem(const char* filename) {
 }
 
 int main(int argc, char** argv) {
-    printf("%d", argc);
+    //printf("%d", argc);
     printf("c This is hidoku satisfiability solver\n");
     printf("c USAGE: -enc <input file> to encode problem into cnf\n");
     printf("c USAGE: -dec <size> <output file> to decode solution. Output file shall only contain the line starting with v\n");
