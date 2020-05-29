@@ -10,7 +10,7 @@
 
 using namespace std;
 
-int width, height,maxVar;
+int width, height,maxVar, numHelperVars, currentMaxHelper;
 
 //encode row,col = val
 int encode(int row, int col, int val){
@@ -20,53 +20,46 @@ int encode(int row, int col, int val){
 //get all neighbours indexes for row,col
 //std::vector<Pair<int,int>> getNeighbours(int row, int col){}
 
-void encodeRules(){
-    std::vector<int> set (width*height,0);
-    for (int i=0; i< width; i++){
-       for (int j=0; j< height; j++){
-           for (int val=1;val<=width*height;val++){
-              set.push_back(encode(j,i,val));
-           }
-           //sequentialAMO(set,100000);
-           printf("\n");
-           //getNeighbours(j,i);
-       }
-       printf("\n");
-    }
-}
-
-/*
 //for sequential AMO constraint
-int getAdditionalVar(int i,int j){
-   return maxVar+i+(n-1)*j;
+int getAdditionalVar(int j){
+  return currentMaxHelper + j;
 }
 
 //sequential one hot encoding
-void sequentialAMO(std::vector<int> set, int offset){
-     //std::vector<int> e0(2, 0);
-     -set[0];
-     getAdditionalVar(1,offset);
-     0
-
-     for (int i=1; i< n-1;i++){
-         ipasir_add(solver, -set[i]);
-         ipasir_add(solver, getAdditionalVar(i+1,offset));
-         ipasir_add(solver,0);
-     
-         ipasir_add(solver,-getAdditionalVar(i,offset));
-         pasir_add(solver, getAdditionalVar(i+1,offset));
-         ipasir_add(solver,0);
-     
-         ipasir_add(solver, -set[i]);
-         ipasir_add(solver, -getAdditionalVar(i,offset));
-         ipasir_add(solver,0);
+void sequentialAMO(std::vector<int> set){
+     for(int j=0; j<width*height;j++){
+         printf("%d ",set[j]);
      }
+     printf("0\n");
      
-     ipasir_add(solver,-set[n-1]);
-     ipasir_add(solver, -getAdditionalVar(n-1,offset));
-     ipasir_add(solver,0);
+     printf("%d %d %d\n", -set[0],getAdditionalVar(1),0);
+
+     for (int i=1; i< numHelperVars;i++){
+         printf("%d %d %d\n", -set[i],getAdditionalVar(i+1),0);
+         printf("%d %d %d\n", -getAdditionalVar(i),getAdditionalVar(i+1),0);
+         printf("%d %d %d\n", -set[i],-getAdditionalVar(i),0);
+     } 
+     
+     printf("%d %d %d\n", -set[numHelperVars],-getAdditionalVar(numHelperVars),0);
+     currentMaxHelper +=numHelperVars;
 }
-*/
+
+void encodeRules(){
+    std::vector<int> set(width*height,0);
+    for (int i=0; i< height; i++){
+       for (int j=0; j< width; j++){
+           for (int val=1;val<=width*height;val++){
+              set[val-1] = encode(i,j,val);
+           }
+           sequentialAMO(set);
+           //printf("\n");
+           //getNeighbours(j,i);
+       }
+       //printf("\n");
+    }
+}
+
+
 
 vector<string> split (const string &s, char delim) {
     vector<string> result;
@@ -92,6 +85,8 @@ bool loadSatProblem(const char* filename) {
         width= stoi(sizes[0]);
         height = stoi(sizes[1]);
         maxVar = width*height*width*height;
+        currentMaxHelper = maxVar;
+        numHelperVars = width*height -1;
         auto lines = split(v[1],';');
         for (int i=0;i<height;i++){
            auto row = split(lines[i],',');
@@ -99,7 +94,7 @@ bool loadSatProblem(const char* filename) {
               if (row[j].compare("0") != 0){
                   int val =  stoi(row[j]);
                   int var = encode(i,j,val);
-                  //printf("%d,%d\n",val,var);
+                  printf("%d 0\n",var);
               }
            }
         }
