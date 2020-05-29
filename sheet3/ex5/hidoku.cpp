@@ -141,21 +141,35 @@ vector<string> split (const string &s, char delim) {
 void decode(char* filename, int size){
     std::ifstream file(filename);
     if (file.is_open()) {
-         string line;
-         getline(file, line);
-         file.close();
-         auto vars = split(line,' ');
-         int row,col,val;
-         for (int i=1;i<=size*size*size*size;i++){
-             int var = stoi(vars[i]);
-             if (var > 0){
-                 row = decodeRow(var,size);
-                 col = decodeCol(var,size);
-                 val = decodeVal(var,size);
-                 printf("%d: %d %d %d\n", var, row, col, val);
-             }
-         }
-     }
+       string line;
+       while (getline(file, line)){
+           if (line[0] == 'v'){
+              auto vars = split(line,' ');
+              int row,col,val;
+              int solution[size][size];
+              for (int i=1;i<=size*size*size*size;i++){
+                 int var = stoi(vars[i]);
+                 if (var > 0){
+                    row = decodeRow(var,size);
+                    col = decodeCol(var,size);
+                    val = decodeVal(var,size);
+                    solution[row][col] = val;
+                    }
+               }
+               string res = "sol:";
+               for (int u=0; u<size;u++){
+                  for(int v=0; v<size;v++){
+                     res += to_string(solution[u][v]);
+                     res += ",";
+                  }
+                  res.pop_back();
+                  res += ";";
+               }
+               printf(res.c_str());
+               return;
+           }
+       }
+    }
 }
 
 // Used for parsing input CNF
@@ -195,12 +209,12 @@ int main(int argc, char** argv) {
     //printf("%d", argc);
     printf("c This is hidoku satisfiability solver\n");
     printf("c USAGE: -enc <input file> to encode problem into cnf\n");
-    printf("c USAGE: -dec <size> <output file> to decode solution. Output file shall only contain the line starting with v\n");
-    if (argc == 3 ){
+    printf("c USAGE: -dec <size> <input file> to decode solution. File shouldy contain the solution starting with v\n");
+    if (argc == 3 && argv[1] == string("-enc")){
        loadSatProblem(argv[2]);
        encodeRules();
     }
-    if (argc == 4 ){
+    if (argc == 4 && argv[1] == string("-dec")){
        int size = atoi(argv[2]);
        decode(argv[3],size);
    }
