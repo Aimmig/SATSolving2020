@@ -10,11 +10,20 @@
 
 using namespace std;
 
-int width, height,maxVar, numHelperVars, currentMaxHelper;
+int width, height,maxVar, numHelperVars, num_units;
+int currentMaxHelper;
 
 //encode row,col = val
 int encode(int row, int col, int val){
     return (val-1)*width*height + col + width*row +1;
+}
+
+int getNumVars(){
+    return maxVar + width*height*(width*height-1);// +....
+}
+
+int getNumClauses(){
+   return num_units + width*height*(1+2+3*(width*height-2));//+width*height;
 }
 
 //get all neighbours indexes for row,col
@@ -23,6 +32,13 @@ int encode(int row, int col, int val){
 //for sequential AMO constraint
 int getAdditionalVar(int j){
   return currentMaxHelper + j;
+}
+
+void printHeader(std::vector<int> unit_clauses){
+     printf("p cnf %d %d\n", getNumVars(),getNumClauses());
+     for (auto var: unit_clauses){
+         printf("%d 0\n", var);
+     }
 }
 
 //sequential one hot encoding
@@ -88,16 +104,19 @@ bool loadSatProblem(const char* filename) {
         currentMaxHelper = maxVar;
         numHelperVars = width*height -1;
         auto lines = split(v[1],';');
+        std::vector<int> units;
         for (int i=0;i<height;i++){
            auto row = split(lines[i],',');
            for (int j=0; j<width; j++){
               if (row[j].compare("0") != 0){
                   int val =  stoi(row[j]);
                   int var = encode(i,j,val);
-                  printf("%d 0\n",var);
+                  units.push_back(var);
               }
            }
         }
+        num_units = units.size();
+        printHeader(units);
         return true;
     }
     return false;
