@@ -10,8 +10,12 @@
 
 using namespace std;
 
+int width, height;
+
 //encode row,col = val
-int encode(int row, int col, int val){ return 0;}
+int encode(int row, int col, int val){
+    return (val-1)*width*height + col + width*row +1;
+}
 
 //get all neighbours if row,col =val
 //std::vector<int> getNeighbours(int row, int col, int val){}
@@ -67,12 +71,23 @@ bool loadSatProblem(const char* filename) {
     if (file.is_open()) {
         string line;
         getline(file, line);
+        file.close();
         auto v = split(line,':');
+        auto sizes = split(v[0], ',');
+        width= stoi(sizes[0]);
+        height = stoi(sizes[1]);
+        printf("%d\n",height);
         auto lines = split(v[1],';');
-        for (int i=0; i<lines.size();i++){
-           cout<<lines[i]<<endl;
+        for (int i=0;i<height;i++){
+           auto row = split(lines[i],',');
+           for (int j=0; j<width; j++){
+              if (row[j].compare("0") != 0){
+                  int val =  stoi(row[j]);
+                  int var = encode(i,j,val);
+                  printf("%d,%d\n",val,var);
+              }
+           }
         }
-    file.close();
     }
     //split line at :
     //first half: row,col
