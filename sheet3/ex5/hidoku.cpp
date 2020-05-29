@@ -7,6 +7,7 @@
 #include <fstream>
 #include <sstream>
 #include <iostream>
+#include <tuple>
 
 using namespace std;
 
@@ -19,15 +20,32 @@ int encode(int row, int col, int val){
 }
 
 int getNumVars(){
-    return maxVar + width*height*(width*height-1);// +....
+    return maxVar + width*height*(width*height-1);
 }
 
 int getNumClauses(){
-   return num_units + width*height*(1+2+3*(width*height-2));//+width*height;
+   return num_units + width*height*(1+2+3*(width*height-2))+width*height*(width*height-1);
 }
 
 //get all neighbours indexes for row,col
-//std::vector<Pair<int,int>> getNeighbours(int row, int col){}
+std::vector<tuple<int,int>> getNeighbours(int row, int col){
+   int startW = (col - 1 < 0) ? col : col-1;
+   int startH = (row - 1 < 0) ? row : row-1;
+   int endW   = (col + 1 > width) ? col : col+1;
+   int endH   = (row + 1 > height) ? row : row+1;
+
+   vector<tuple<int,int>> neighbours;
+   // See how many are alive
+   for (int rowNum=startH; rowNum<=endH; rowNum++) {
+       for (int colNum=startW; colNum<=endW; colNum++) {
+           if (colNum == col && rowNum == row){
+               continue;
+           }
+           neighbours.push_back(tuple<int,int>(rowNum,colNum));
+       }
+   }
+   return neighbours;
+}
 
 //for sequential AMO constraint
 int getAdditionalVar(int j){
@@ -68,10 +86,21 @@ void encodeRules(){
               set[val-1] = encode(i,j,val);
            }
            sequentialAMO(set);
-           //printf("\n");
-           //getNeighbours(j,i);
+           auto ne = getNeighbours(i,j);
+           int row, col;
+           for (int val=1; val<width*height;val++){
+               printf("%d ",-encode(i,j,val));
+               //printf("%d:%d ",i,j);
+               for (auto t: ne){
+                  row = get<0>(t);
+                  col = get<1>(t);
+                  printf("%d ",encode(row,col,val+1));
+                  //printf("%d:%d ",row,col);
+                  //printf("%d ,%d, %d, %d;",encode(row,col,val+1), row, col ,val+1);
+               }
+               printf("0\n");
+           }
        }
-       //printf("\n");
     }
 }
 
