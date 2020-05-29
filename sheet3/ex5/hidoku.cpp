@@ -19,9 +19,22 @@ int encode(int row, int col, int val){
     return (val-1)*width*height + col + width*row +1;
 }
 
+int decodeCol(int var, int sizes){
+    return (var-1)% (sizes);
+}
+
+int decodeRow(int var, int sizes){
+    return ((var-1 - decodeCol(var,sizes)) % (sizes*sizes))/sizes;
+}
+
+int decodeVal(int var, int sizes){
+    return (var-1) - decodeCol(var,sizes);//-(sizes)*decodeRow(var,sizes);
+}
+
 int getNumVars(){
     return maxVar + width*height*(width*height-1);
 }
+
 
 int getNumClauses(){
    return num_units + width*height*(1+2+3*(width*height-2))+width*height*(width*height-1);
@@ -118,6 +131,26 @@ vector<string> split (const string &s, char delim) {
     return result;
 }
 
+void decode(char* filename, int size){
+    std::ifstream file(filename);
+    if (file.is_open()) {
+         string line;
+         getline(file, line);
+         file.close();
+         auto vars = split(line,' ');
+         int row,col,val;
+         for (int i=1;i<=size*size*size*size;i++){
+             int var = stoi(vars[i]);
+             if (var > 0){
+                 row = decodeRow(var,size);
+                 col = decodeCol(var,size);
+                 val = decodeVal(var,size);
+                 printf("%d %d %d\n", row, col, val);
+             }
+         }
+     }
+}
+
 // Used for parsing input CNF
 bool loadSatProblem(const char* filename) {
     std::ifstream file(filename);
@@ -152,12 +185,17 @@ bool loadSatProblem(const char* filename) {
 }
 
 int main(int argc, char** argv) {
-    printf("c This is <your-name>'s local search satisfiability solver\n");
-    printf("c USAGE: ./<your-name> <cnf-formula-in-dimacs-format> <seed> <MAX_TRIES> <MAX_FLIPS>\n");
-    if (argc != 2){
-       printf("Incorrect number of arguments specified");
-       return 1;
+    printf("%d", argc);
+    printf("c This is hidoku satisfiability solver\n");
+    printf("c USAGE: -enc <input file> to encode problem into cnf\n");
+    printf("c USAGE: -dec <size> <output file> to decode solution. Output file shall only contain the line starting with v\n");
+    if (argc == 3 ){
+       loadSatProblem(argv[2]);
+       encodeRules();
     }
-    loadSatProblem(argv[1]);
-    encodeRules();
+    if (argc == 4 ){
+       int size = atoi(argv[2]);
+       decode(argv[3],size);
+   }
+   return -1;
 }
