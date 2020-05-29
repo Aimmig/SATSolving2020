@@ -10,15 +10,30 @@
 
 using namespace std;
 
-int width, height;
+int width, height,maxVar;
 
 //encode row,col = val
 int encode(int row, int col, int val){
     return (val-1)*width*height + col + width*row +1;
 }
 
-//get all neighbours if row,col =val
-//std::vector<int> getNeighbours(int row, int col, int val){}
+//get all neighbours indexes for row,col
+//std::vector<Pair<int,int>> getNeighbours(int row, int col){}
+
+void encodeRules(){
+    std::vector<int> set (width*height,0);
+    for (int i=0; i< width; i++){
+       for (int j=0; j< height; j++){
+           for (int val=1;val<=width*height;val++){
+              set.push_back(encode(j,i,val));
+           }
+           //sequentialAMO(set,100000);
+           printf("\n");
+           //getNeighbours(j,i);
+       }
+       printf("\n");
+    }
+}
 
 /*
 //for sequential AMO constraint
@@ -76,7 +91,7 @@ bool loadSatProblem(const char* filename) {
         auto sizes = split(v[0], ',');
         width= stoi(sizes[0]);
         height = stoi(sizes[1]);
-        printf("%d\n",height);
+        maxVar = width*height*width*height;
         auto lines = split(v[1],';');
         for (int i=0;i<height;i++){
            auto row = split(lines[i],',');
@@ -84,18 +99,13 @@ bool loadSatProblem(const char* filename) {
               if (row[j].compare("0") != 0){
                   int val =  stoi(row[j]);
                   int var = encode(i,j,val);
-                  printf("%d,%d\n",val,var);
+                  //printf("%d,%d\n",val,var);
               }
            }
         }
+        return true;
     }
-    //split line at :
-    //first half: row,col
-
-    //split second part at ;
-    //each part of that is one line
-    //split at , to get the numbers
-    return true;
+    return false;
 }
 
 int main(int argc, char** argv) {
@@ -106,4 +116,5 @@ int main(int argc, char** argv) {
        return 1;
     }
     loadSatProblem(argv[1]);
+    encodeRules();
 }
