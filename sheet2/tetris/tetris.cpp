@@ -19,7 +19,7 @@ int encode(int row, int col, int val){
     return (val-1)*width*height + col + width*row +1;
 }
 
-int decodeCol(int var, int sizes){
+/*int decodeCol(int var, int sizes){
     return (var-1)% (sizes);
 }
 
@@ -29,7 +29,7 @@ int decodeRow(int var, int sizes){
 
 int decodeVal(int var, int sizes){
     return 1+ (((var-1 - decodeCol(var,sizes))/sizes) - decodeRow(var,sizes))/sizes;
-}
+}*/
 
 int getNumVars(){
     return maxVar+ width*height*(numParts-1);
@@ -40,7 +40,7 @@ int getNumClauses(){
 }
 
 //get all neighbours indexes for row,col
-std::vector<tuple<int,int>> getNeighbours(int row, int col){
+/*std::vector<tuple<int,int>> getNeighbours(int row, int col){
    int startW = (col - 1 < 0) ? col : col-1;
    int startH = (row - 1 < 0) ? row : row-1;
    int endW   = (col + 1 >= width) ? col : col+1;
@@ -58,7 +58,7 @@ std::vector<tuple<int,int>> getNeighbours(int row, int col){
    }
    //printf("------\n");
    return neighbours;
-}
+}*/
 
 //for sequential AMO constraint
 int getAdditionalVar(int j){
@@ -83,7 +83,7 @@ void sequentialAMO(std::vector<int> set){
      currentMaxHelper +=numHelperVars;
 }
 
-void encodeRules(){
+/*void encodeRules(){
     std::vector<int> set(width*height,0);
     for (int i=0; i< height; i++){
        for (int j=0; j< width; j++){
@@ -116,9 +116,9 @@ void encodeRules(){
         }
         printf("0\n");
     }
-}
+}*/
 
-vector<string> split (const string &s, char delim) {
+/*vector<string> split (const string &s, char delim) {
     vector<string> result;
     stringstream ss (s);
     string item;
@@ -128,7 +128,7 @@ vector<string> split (const string &s, char delim) {
     }
 
     return result;
-}
+}*/
 
 /*
 void encodeO(int row, int col, int val){
@@ -199,8 +199,33 @@ bool loadSatProblem() {
            for(int t=0; t<numParts; t++){
                 set[t]=encode(r,c,t);
            }
-           sequentialAMO(set);
+           //sequentialAMO(set);
        }
+    }
+    int currentPart = 0;
+    printf("I:\n");
+    for (int p=currentPart; p<I;p++){
+         printf("%d\n",p);
+    }
+    currentPart +=I;
+    printf("T:\n");
+    for (int p=currentPart; p<I+T;p++){
+         printf("%d\n",p);
+    }
+    currentPart +=T;
+    printf("S:\n");
+    for (int p=currentPart; p<I+T+S;p++){
+         printf("%d\n",p);
+    }
+    currentPart +=S;
+    printf("L:\n");
+    for (int p=currentPart; p<I+T+S+L;p++){
+         printf("%d\n",p);
+    }
+    currentPart +=L;
+    printf("O:\n");
+    for (int p=currentPart; p<I+T+S+L+O;p++){
+         printf("%d\n",p);
     }
     return false;
 }
