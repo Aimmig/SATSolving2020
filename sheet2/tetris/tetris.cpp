@@ -136,25 +136,32 @@ void encodeO(int row, int col, int val){
      for (r=0;r<row;r++){
          
      }
-}
+}*/
 
 void encodeI(int row, int col, int val){
-     printf("%d ", -encode(row,col,val));
-     for (int c=0; c<=height; c++){
-         if( c>=col+1 && c<col+4){
-            printf("%d ", encode(row,c,val));
-         }
-         else{
-            printf("%d ", -encode(row,c,val));
-         }
+     if (col+3 >= height){
+         printf("%d 0\n", -encode(row,col,val));
      }
-     for (int c=0; c<height; c++){
-         for (int r=0; r<width; r++){
-            printf("%d ", -encode(r,c,val));
-         }
+     else{
+         for (int c=0; c<height; c++){
+              for (int r=0; r<width; r++){
+                 if(r!=row){
+                    printf("%d %d 0\n",  -encode(row,col,val), -encode(r,c,val));
+                 }
+                 else{
+                    if(c>col && c<=col+3){
+                         printf("%d %d 0\n",  -encode(row,col,val), encode(r,c,val));
+                    }
+                    else{
+                      if(c!=col){
+                         printf("%d %d 0\n",  -encode(row,col,val), -encode(r,c,val));
+                      }
+                    }
+                 }
+              }
+          }
      }
-     printf("0\n");
-}*/
+}
 
 /*
 void decode(char* filename, int size){
@@ -200,13 +207,13 @@ bool loadSatProblem() {
                 set[t]=encode(r,c,t);
            }
            //sequentialAMO(set);
+           int currentPart = 0;
+           for (int p=currentPart; p<I;p++){
+               encodeI(r,c,p);
+           }
        }
     }
-    int currentPart = 0;
-    printf("I:\n");
-    for (int p=currentPart; p<I;p++){
-         printf("%d\n",p);
-    }
+    /*
     currentPart +=I;
     printf("T:\n");
     for (int p=currentPart; p<I+T;p++){
@@ -226,7 +233,7 @@ bool loadSatProblem() {
     printf("O:\n");
     for (int p=currentPart; p<I+T+S+L+O;p++){
          printf("%d\n",p);
-    }
+    }*/
     return false;
 }
 
