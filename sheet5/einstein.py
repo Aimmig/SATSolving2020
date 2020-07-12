@@ -1,7 +1,11 @@
 def encodeVar(i,a):
     return 25*(i-1)+a
 
-additional_constraints = 5*8 + 2
+NUM_FACTS = 2
+NUM_IMPL = 8
+NUM_NEIG = 4
+NUM_NEIG_ONESIDE = 1
+additional_constraints = 5*NUM_IMPL + NUM_FACTS + 5*NUM_NEIG + 4*NUM_NEIG_ONESIDE
 
 houses = range(1,6)
 attrib = range(1,26)
@@ -43,6 +47,21 @@ COF = 25
 # enforces S_i^a
 def enforceFact(i,a):
     print(encodeVar(i,a),0)
+
+# attrib a1 implies a2 for neighbour
+def enforceNeighbour(a1, a2, onlyLeft=False):
+    for i in [2,3,4]:
+        if onlyLeft:
+            print(str(-encodeVar(i,a1)),str(encodeVar(i+1,a2)),0)
+        else:
+        # i with a1 implies a2 at i-1 or i+1
+            print(str(-encodeVar(i,a1)),str(encodeVar(i-1,a2)),str(encodeVar(i+1,a2)),0)
+    # left & right border
+    if onlyLeft:
+        print(str(-encodeVar(1,a1)),str(encodeVar(2,a2)),0)
+    else:
+        print(str(-encodeVar(1,a1)),str(encodeVar(2,a2)),0)
+        print(str(-encodeVar(5,a1)),str(encodeVar(4,a2)),0)
 
 # attrib a1 implies a2
 def enforceImplication(a1,a2):
@@ -93,15 +112,15 @@ for i in houses:
 enforceImplication(ENG,RED)
 enforceImplication(SWE,DOG)
 enforceImplication(DEN,TEE)
-# TO-DO cond 4
+enforceNeighbour(GRE,WHT,True)
 enforceImplication(GRE,COF)
 enforceImplication(PAL,BIR)
 enforceImplication(YEL,DUN)
 enforceFact(3,MIL)
 enforceFact(1,NOR)
-# TO-DO cond 10
+enforceNeighbour(BLE,CAT)
 enforceImplication(MAS,BEE)
-# TO-DO cond 12
+enforceNeighbour(HOR,DUN)
 enforceImplication(GER,PRI)
-# TO-DO cond 14
-# TO-DO cond 15
+enforceNeighbour(NOR,BLU)
+enforceNeighbour(BLE,WAT)
