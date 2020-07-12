@@ -1,7 +1,7 @@
 def encodeVar(i,a):
     return 25*(i-1)+a
 
-additional_constraints = 5*8
+additional_constraints = 5*8 + 2
 
 houses = range(1,6)
 attrib = range(1,26)
@@ -40,7 +40,9 @@ WAT = 23
 MIL = 24
 COF = 25
 
-# internal the attributes are order alphabetically
+# enforces S_i^a
+def enforceFact(i,a):
+    print(encodeVar(i,a),0)
 
 # attrib a1 implies a2
 def enforceImplication(a1,a2):
@@ -88,9 +90,6 @@ for i in houses:
 
 
 
-
-
-
 enforceImplication(ENG,RED)
 enforceImplication(SWE,DOG)
 enforceImplication(DEN,TEE)
@@ -98,8 +97,8 @@ enforceImplication(DEN,TEE)
 enforceImplication(GRE,COF)
 enforceImplication(PAL,BIR)
 enforceImplication(YEL,DUN)
-# TO-DO cond 8
-# TO-DO cond 9
+enforceFact(3,MIL)
+enforceFact(1,NOR)
 # TO-DO cond 10
 enforceImplication(MAS,BEE)
 # TO-DO cond 12
