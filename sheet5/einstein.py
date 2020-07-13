@@ -2,7 +2,7 @@ def encodeVar(i,a):
     return 25*(i-1)+a
 
 NUM_FACTS = 2
-NUM_IMPL = 8
+NUM_IMPL = 9
 NUM_NEIG = 4
 NUM_NEIG_ONESIDE = 1
 additional_constraints = 5*NUM_IMPL + NUM_FACTS + 5*NUM_NEIG + 4*NUM_NEIG_ONESIDE
@@ -64,10 +64,15 @@ def enforceNeighbour(a1, a2, onlyLeft=False):
         print(str(-encodeVar(5,a1)),str(encodeVar(4,a2)),0)
 
 # attrib a1 implies a2
-def enforceImplication(a1,a2):
-    for i in houses:
-       cond = str(-encodeVar(i,a1)) + ' '+str(encodeVar(i,a2))
-       print(cond,0)
+def enforceImplication(a1,a2,pos=True):
+    if pos:
+       for i in houses:
+          cond = str(-encodeVar(i,a1)) + ' '+str(encodeVar(i,a2))
+          print(cond,0)
+    else:
+       for i in houses:
+          cond = str(-encodeVar(i,a1)) + ' '+str(-encodeVar(i,a2))
+          print(cond,0)
 
 print("p cnf",num_vars, num_clauses)
 
@@ -106,8 +111,10 @@ for i in houses:
               print(str(-encodeVar(i,a1))+' '+str(-encodeVar(i,a2))+' '+str(0))
 
 
-
-
+# If removing a (set) of clauses and excluding the solution leads to UNSAT
+# then this conditions could be dropped and still only the excluded solution would exist
+# Manually testing shows: Removing any clauses still allows another solution.
+# So no conditions can be dropped for the unique solution (where the German keeps the fish)
 
 enforceImplication(ENG,RED)
 enforceImplication(SWE,DOG)
@@ -124,3 +131,5 @@ enforceNeighbour(HOR,DUN)
 enforceImplication(GER,PRI)
 enforceNeighbour(NOR,BLU)
 enforceNeighbour(BLE,WAT)
+# additional clause for excluding the solution to the puzzle
+enforceImplication(GER,FIS,False)
